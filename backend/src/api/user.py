@@ -129,7 +129,7 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
     user = user_service.authenticate_user(db, login_data.username, login_data.password)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=402,
             detail="用户名或密码错误",
             headers={"WWW-Authenticate": "Bearer"},
         )

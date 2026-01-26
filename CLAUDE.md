@@ -18,14 +18,24 @@ MediTrack 是一个面向患者的药物管理平台，后端使用 FastAPI，�
 - `src/db/database.py` - SQLAlchemy 设置，包含引擎、Base、会话工厂和 `get_db()` 依赖
 - `src/db/models/` - SQLAlchemy ORM 模型
   - `user.py` - 用户模型（包含用户名、邮箱、明文密码、头像Base64、账户状态等）
+  - `medication.py` - 药物模型（包含药物名称、剂量、频率、日期、备注等，通过外键关联用户）
 - `src/api/` - API 路由处理器（控制器层）
   - `user.py` - 用户相关API（注册、登录、获取/更新用户信息、上传头像）
+  - `medication.py` - 药物相关API（创建、查询、更新、删除药物记录）
 - `src/schemas/` - Pydantic 模式，用于请求/响应验证
   - `user.py` - 用户相关的请求/响应模式
+  - `medication.py` - 药物相关的请求/响应模式
 - `src/serves/` - 业务逻辑/服务层
   - `user_service.py` - 用户业务逻辑（JWT生成、用户CRUD）
+  - `medication_service.py` - 药物业务逻辑（药物CRUD、权限验证）
 
 **数据库**: SQLite 配合 SQLAlchemy ORM。数据库文件位置通过 `.env` 中的 `DATA_URL` 配置。
+
+**数据表结构**:
+- `user` - 用户表（id, username, email, password, avatar, full_name, is_active, created_at, updated_at）
+- `medication` - 药物表（id, user_id, name, dosage, frequency, start_date, end_date, notes, is_active, created_at, updated_at）
+  - 外键关系：`medication.user_id` → `user.id`
+  - 索引：`user_id`, `(user_id, is_active)` 组合索引
 
 **配置**: 使用 pydantic-settings 从 `backend/.env` 加载：
 - `HOST` - 服务器主机（默认：127.0.0.1）
@@ -141,6 +151,21 @@ npm run preview
 
 8. **生命周期管理**: 使用 `lifespan` 上下文管理器进行应用启动/关闭时的初始化
 
+9. **外键关系与资源隔离**:
+   - 使用 SQLAlchemy 的 `ForeignKey` 定义表间关系
+   - 所有资源查询都包含 `user_id` 过滤条件，确保用户只能访问自己的数据
+   - 示例：
+   ```python
+   # 定义外键
+   user_id = Column(Integer, ForeignKey('user.id'), nullable=False, index=True)
+
+   # 查询时验证所有权
+   medication = db.query(Medication).filter(
+       Medication.id == medication_id,
+       Medication.user_id == user_id
+   ).first()
+   ```
+
 ### 前端模式
 
 1. **路径别名**: 使用 `@/` 引用 `src/` 目录（在 vite.config.js 中配置）
@@ -155,6 +180,13 @@ npm run preview
 - **GET /user/me** - 获取当前用户信息（需要认证）
 - **PUT /user/me** - 更新当前用户信息（需要认证）
 - **POST /user/avatar** - 上传用户头像Base64（需要认证）
+
+### 药物管理模块
+- **POST /medication** - 创建药物记录（需要认证）
+- **GET /medication** - 获取当前用户的所有药物记录（需要认证）
+- **GET /medication/{medication_id}** - 获取指定药物记录（需要认证，验证所有权）
+- **PUT /medication/{medication_id}** - 更新药物记录（需要认证，验证所有权，支持部分更新）
+- **DELETE /medication/{medication_id}** - 删除药物记录（需要认证，验证所有权）
 
 ## 开发指南
 

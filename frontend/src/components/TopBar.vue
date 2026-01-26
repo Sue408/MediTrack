@@ -28,6 +28,7 @@ import { computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import Logo from '@/assets/Logo.vue'
+import confirm from '@/utils/confirm'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -37,9 +38,21 @@ const user = computed(() => userStore.user)
 // 从父组件注入的侧边栏切换方法
 const toggleSidebar = inject('toggleSidebar', () => {})
 
-const handleLogout = () => {
-  userStore.logout()
-  router.push('/auth')
+const handleLogout = async () => {
+  try {
+    await confirm.warning(
+      '确定要退出登录吗？',
+      '退出登录'
+    )
+
+    userStore.logout()
+    router.push('/auth')
+  } catch (error) {
+    // 用户取消操作
+    if (error.message === '用户取消') {
+      return
+    }
+  }
 }
 </script>
 

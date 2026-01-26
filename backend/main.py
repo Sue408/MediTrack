@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from src.core import config
 from src.db import init_db
-from src.api import user_router
+from src.api import user_router, medication_router
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -37,6 +37,9 @@ def main():
 
     # 注册用户路由
     app.include_router(user_router)
+
+    # 注册药物路由
+    app.include_router(medication_router)
 
     # 启动uvicorn服务
     uvicorn.run(app, host=config.HOST, port=config.PORT)

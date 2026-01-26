@@ -11,6 +11,12 @@ from .user import (
     UserResponse,
     TokenResponse
 )
+from .medication import (
+    MedicationBase,
+    MedicationCreate,
+    MedicationUpdate,
+    MedicationResponse
+)
 
 __all__ = [
     "UserBase",
@@ -19,5 +25,9 @@ __all__ = [
     "UserUpdate",
     "UserAvatarUpdate",
     "UserResponse",
-    "TokenResponse"
+    "TokenResponse",
+    "MedicationBase",
+    "MedicationCreate",
+    "MedicationUpdate",
+    "MedicationResponse"
 ]

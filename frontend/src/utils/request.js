@@ -34,12 +34,6 @@ request.interceptors.response.use(
   (error) => {
     // 处理错误响应
     if (error.response) {
-      console.error('响应拦截器 - 错误:', {
-        status: error.response.status,
-        url: error.config?.url,
-        data: error.response.data,
-        headers: error.response.headers
-      })
       switch (error.response.status) {
         case 401:
           console.error('401错误 - 未授权，即将跳转到登录页')
