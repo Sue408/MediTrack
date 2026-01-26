@@ -16,7 +16,40 @@ const routes = [
     path: '/home',
     name: 'Home',
     component: () => import('@/views/Home.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
+    redirect: '/home/profile',
+    children: [
+      {
+        path: 'profile',
+        name: 'Profile',
+        component: () => import('@/views/Profile.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'medicines',
+        name: 'Medicines',
+        component: () => import('@/views/Medicines.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'reminders',
+        name: 'Reminders',
+        component: () => import('@/views/Reminders.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'records',
+        name: 'Records',
+        component: () => import('@/views/Records.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'statistics',
+        name: 'Statistics',
+        component: () => import('@/views/Statistics.vue'),
+        meta: { requiresAuth: true }
+      }
+    ]
   }
 ]
 

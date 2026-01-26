@@ -28,15 +28,24 @@ request.interceptors.request.use(
 // 响应拦截器
 request.interceptors.response.use(
   (response) => {
+    console.log('响应拦截器 - 成功:', response.status, response.config.url)
     return response.data
   },
   (error) => {
     // 处理错误响应
     if (error.response) {
+      console.error('响应拦截器 - 错误:', {
+        status: error.response.status,
+        url: error.config?.url,
+        data: error.response.data,
+        headers: error.response.headers
+      })
       switch (error.response.status) {
         case 401:
+          console.error('401错误 - 未授权，即将跳转到登录页')
           // 未授权，清除token并跳转到登录页
           localStorage.removeItem('token')
+          localStorage.removeItem('user')
           window.location.href = '/auth'
           break
         case 403:

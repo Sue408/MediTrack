@@ -46,12 +46,22 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 获取用户ID
-    user_id: int = payload.get("sub")
-    if user_id is None:
+    # 获取用户ID（JWT的sub必须是字符串）
+    user_id_str: str = payload.get("sub")
+    if user_id_str is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="无效的认证凭证",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # 将字符串转换为整数
+    try:
+        user_id = int(user_id_str)
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效的用户ID格式",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -97,7 +107,7 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
 
     # 生成访问令牌
     access_token = user_service.create_access_token(
-        data={"sub": user.id}
+        data={"sub": str(user.id)}
     )
 
     return TokenResponse(
@@ -133,7 +143,7 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
 
     # 生成访问令牌
     access_token = user_service.create_access_token(
-        data={"sub": user.id}
+        data={"sub": str(user.id)}
     )
 
     return TokenResponse(
