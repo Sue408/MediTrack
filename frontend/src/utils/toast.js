@@ -26,7 +26,6 @@ export function showToast({ message, type = 'info', duration = 3000 }) {
     message,
     type,
     duration,
-    show: true,
     onClose: () => {
       hideToast()
     }
@@ -44,7 +43,7 @@ export function showToast({ message, type = 'info', duration = 3000 }) {
 export function hideToast() {
   if (toastApp && toastInstance) {
     setTimeout(() => {
-      toastApp.unmount()
+      toastApp?.unmount()
       const container = document.querySelector('body > div:last-child')
       if (container) {
         document.body.removeChild(container)

@@ -1,7 +1,7 @@
 <template>
   <teleport to="body">
     <transition name="toast-fade">
-      <div v-if="visible" class="toast-container" :class="`toast-${type}`">
+      <div v-show="visible" class="toast-container" :class="`toast-${type}`">
         <div class="toast-icon">
           <!-- 成功图标 -->
           <svg v-if="type === 'success'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -52,10 +52,6 @@ const props = defineProps({
     type: Number,
     default: 3000
   },
-  show: {
-    type: Boolean,
-    default: false
-  }
 })
 
 const emit = defineEmits(['close'])
@@ -73,7 +69,7 @@ onMounted(() => {
     // 等待动画完成后触发关闭事件
     setTimeout(() => {
       emit('close')
-    }, 300)
+    }, 350)
   }, props.duration)
 })
 

@@ -22,8 +22,17 @@ class Medication(Base):
     # 剂量
     dosage = Column(String(50), nullable=True, comment="剂量（如500mg）")
 
-    # 服用频率
-    frequency = Column(String(100), nullable=True, comment="服用频率（如每日3次）")
+    # 服用频率类型（daily-每日, weekly-每周）
+    frequency_type = Column(String(20), nullable=False, comment="频率类型：daily-每日，weekly-每周")
+
+    # 每日服用次数（仅当frequency_type=daily时有效）
+    times_per_day = Column(Integer, nullable=True, comment="每日服用次数")
+
+    # 具体服用时间（JSON数组，如 ["08:00", "12:00", "18:00"]，仅当frequency_type=daily时有效）
+    daily_times = Column(Text, nullable=True, comment="每日具体服用时间JSON数组")
+
+    # 每周服用的星期几（JSON数组，如 [1, 3, 5] 表示周一、周三、周五，仅当frequency_type=weekly时有效）
+    weekly_days = Column(Text, nullable=True, comment="每周服用的星期几JSON数组")
 
     # 开始日期
     start_date = Column(Date, nullable=False, comment="开始日期")

@@ -5,6 +5,7 @@
 from datetime import datetime, timezone
 from typing import Optional, List
 from sqlalchemy.orm import Session
+import json
 from ..db.models.medication import Medication
 from ..schemas.medication import MedicationCreate, MedicationUpdate
 
@@ -17,12 +18,24 @@ def create_medication(db: Session, user_id: int, medication_data: MedicationCrea
     :param medication_data: 药物创建数据
     :return: 创建的药物对象
     """
+    # 处理JSON字段
+    daily_times_json = None
+    weekly_days_json = None
+
+    if medication_data.frequency_type == "daily" and medication_data.daily_times:
+        daily_times_json = json.dumps(medication_data.daily_times)
+    elif medication_data.frequency_type == "weekly" and medication_data.weekly_days:
+        weekly_days_json = json.dumps(medication_data.weekly_days)
+
     # 创建药物对象
     db_medication = Medication(
         user_id=user_id,
         name=medication_data.name,
         dosage=medication_data.dosage,
-        frequency=medication_data.frequency,
+        frequency_type=medication_data.frequency_type,
+        times_per_day=medication_data.times_per_day,
+        daily_times=daily_times_json,
+        weekly_days=weekly_days_json,
         start_date=medication_data.start_date,
         end_date=medication_data.end_date,
         notes=medication_data.notes,
@@ -86,8 +99,14 @@ def update_medication(
         medication.name = medication_data.name
     if medication_data.dosage is not None:
         medication.dosage = medication_data.dosage
-    if medication_data.frequency is not None:
-        medication.frequency = medication_data.frequency
+    if medication_data.frequency_type is not None:
+        medication.frequency_type = medication_data.frequency_type
+    if medication_data.times_per_day is not None:
+        medication.times_per_day = medication_data.times_per_day
+    if medication_data.daily_times is not None:
+        medication.daily_times = json.dumps(medication_data.daily_times)
+    if medication_data.weekly_days is not None:
+        medication.weekly_days = json.dumps(medication_data.weekly_days)
     if medication_data.start_date is not None:
         medication.start_date = medication_data.start_date
     if medication_data.end_date is not None:

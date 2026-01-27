@@ -4,5 +4,6 @@
 """
 from . import user_service
 from . import medication_service
+from . import reminder_service
 
-__all__ = ["user_service", "medication_service"]
+__all__ = ["user_service", "medication_service", "reminder_service"]

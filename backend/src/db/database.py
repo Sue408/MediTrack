@@ -20,5 +20,5 @@ def get_db():
 # 定义数据库初始化方法
 def init_db():
     """数据库初始化方法"""
-    from .models import User, Medication # noqa
+    from .models import User, Medication, MedicationRecord # noqa
     Base.metadata.create_all(bind=engine)

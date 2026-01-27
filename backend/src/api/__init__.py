@@ -4,5 +4,6 @@ API路由模块
 """
 from .user import router as user_router
 from .medication import router as medication_router
+from .reminder import router as reminder_router
 
-__all__ = ["user_router", "medication_router"]
+__all__ = ["user_router", "medication_router", "reminder_router"]

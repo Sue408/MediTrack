@@ -17,6 +17,12 @@ from .medication import (
     MedicationUpdate,
     MedicationResponse
 )
+from .reminder import (
+    ReminderBase,
+    ReminderCreate,
+    ReminderUpdate,
+    ReminderResponse
+)
 
 __all__ = [
     "UserBase",
@@ -29,5 +35,9 @@ __all__ = [
     "MedicationBase",
     "MedicationCreate",
     "MedicationUpdate",
-    "MedicationResponse"
+    "MedicationResponse",
+    "ReminderBase",
+    "ReminderCreate",
+    "ReminderUpdate",
+    "ReminderResponse"
 ]

@@ -63,6 +63,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { getMedications, createMedication, updateMedication, deleteMedication } from '@/api/medication'
 import MedicationFilter from '@/components/MedicationFilter.vue'
 import MedicationCard from '@/components/MedicationCard.vue'
@@ -70,6 +71,7 @@ import MedicationForm from '@/components/MedicationForm.vue'
 import PhotoViewer from '@/assets/PhotoViewer.vue'
 import toast from '@/utils/toast'
 import confirm from '@/utils/confirm'
+const route = useRoute()
 
 // 状态管理
 const medications = ref([])
@@ -187,8 +189,17 @@ const handleClosePhotoViewer = () => {
 }
 
 // 页面加载时获取数据
-onMounted(() => {
-  loadMedications()
+onMounted(async () => {
+  await loadMedications()
+
+  // 检查是否有编辑参数
+  const editId = route.query?.edit
+  if (editId) {
+    const medication = medications.value.find(m => m.id === parseInt(editId))
+    if (medication) {
+      handleEditMedication(medication)
+    }
+  }
 })
 </script>
 

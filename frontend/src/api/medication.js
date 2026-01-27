@@ -5,10 +5,15 @@ import request from '@/utils/request'
  * @param {Object} data - 药物数据
  * @param {string} data.name - 药物名称
  * @param {string} data.dosage - 剂量
- * @param {string} data.frequency - 服用频率
+ * @param {string} data.frequency_type - 频率类型：daily-每日，weekly-每周
+ * @param {number} data.times_per_day - 每日服用次数（仅daily类型）
+ * @param {Array<string>} data.daily_times - 每日具体服用时间（HH:MM格式，仅daily类型）
+ * @param {Array<number>} data.weekly_days - 每周服用的星期几（1-7，仅weekly类型）
  * @param {string} data.start_date - 开始日期
  * @param {string} data.end_date - 结束日期
  * @param {string} data.notes - 备注
+ * @param {string} data.photos - 药品照片JSON数组
+ * @param {string} data.barcode - 药品条形码
  * @returns {Promise}
  */
 export const createMedication = (data) => {

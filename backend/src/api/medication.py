@@ -5,6 +5,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+import json
 
 from ..db.database import get_db
 from ..schemas.medication import (
@@ -18,6 +19,46 @@ from .user import get_current_user
 
 # 创建路由器
 router = APIRouter(prefix="/medication", tags=["药物管理"])
+
+
+def _build_medication_response(medication) -> MedicationResponse:
+    """
+    构建药物响应对象，解析JSON字段
+    """
+    # 解析daily_times
+    daily_times = None
+    if medication.daily_times:
+        try:
+            daily_times = json.loads(medication.daily_times)
+        except:
+            daily_times = None
+
+    # 解析weekly_days
+    weekly_days = None
+    if medication.weekly_days:
+        try:
+            weekly_days = json.loads(medication.weekly_days)
+        except:
+            weekly_days = None
+
+    return MedicationResponse(
+        id=medication.id,
+        user_id=medication.user_id,
+        name=medication.name,
+        dosage=medication.dosage,
+        frequency_type=medication.frequency_type,
+        times_per_day=medication.times_per_day,
+        daily_times=daily_times,
+        weekly_days=weekly_days,
+        start_date=medication.start_date,
+        end_date=medication.end_date,
+        notes=medication.notes,
+        photos=medication.photos,
+        barcode=medication.barcode,
+        is_active=medication.is_active,
+        created_at=medication.created_at,
+        updated_at=medication.updated_at
+    )
 
 
 @router.post("", response_model=MedicationResponse, status_code=status.HTTP_201_CREATED)
@@ -34,7 +75,7 @@ async def create_medication(
     :return: 创建的药物信息
     """
     medication = medication_service.create_medication(db, current_user.id, medication_data)
-    return MedicationResponse.model_validate(medication)
+    return _build_medication_response(medication)
 
 
 @router.get("", response_model=List[MedicationResponse])
@@ -49,7 +90,7 @@ async def get_medications(
     :return: 药物列表
     """
     medications = medication_service.get_user_medications(db, current_user.id)
-    return [MedicationResponse.model_validate(med) for med in medications]
+    return [_build_medication_response(med) for med in medications]
 
 
 @router.get("/{medication_id}", response_model=MedicationResponse)
@@ -71,7 +112,7 @@ async def get_medication(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="药物记录不存在"
         )
-    return MedicationResponse.model_validate(medication)
+    return _build_medication_response(medication)
 
 
 @router.put("/{medication_id}", response_model=MedicationResponse)
@@ -97,7 +138,7 @@ async def update_medication(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="药物记录不存在"
         )
-    return MedicationResponse.model_validate(medication)
+    return _build_medication_response(medication)
 
 
 @router.delete("/{medication_id}", status_code=status.HTTP_204_NO_CONTENT)

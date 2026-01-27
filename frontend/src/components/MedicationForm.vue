@@ -19,25 +19,117 @@
             />
           </div>
 
-          <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">剂量</label>
+            <input
+              v-model="formData.dosage"
+              type="text"
+              class="form-input"
+              placeholder="如：500mg"
+            />
+          </div>
+
+          <!-- 频率类型选择 -->
+          <div class="form-group">
+            <label class="form-label">服用频率类型 <span class="required">*</span></label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input
+                  v-model="formData.frequency_type"
+                  type="radio"
+                  value="daily"
+                  class="radio-input"
+                  required
+                />
+                <span>每天</span>
+              </label>
+              <label class="radio-label">
+                <input
+                  v-model="formData.frequency_type"
+                  type="radio"
+                  value="weekly"
+                  class="radio-input"
+                  required
+                />
+                <span>每周</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 每日频率设置 -->
+          <div v-if="formData.frequency_type === 'daily'" class="frequency-section">
             <div class="form-group">
-              <label class="form-label">剂量</label>
+              <label class="form-label">每日服用次数 <span class="required">*</span></label>
               <input
-                v-model="formData.dosage"
-                type="text"
+                v-model.number="formData.times_per_day"
+                type="number"
+                min="1"
+                max="10"
                 class="form-input"
-                placeholder="如：500mg"
+                placeholder="如：3"
+                required
               />
             </div>
 
             <div class="form-group">
-              <label class="form-label">服用频率</label>
-              <input
-                v-model="formData.frequency"
-                type="text"
-                class="form-input"
-                placeholder="如：每日3次"
-              />
+              <label class="form-label">具体服用时间 <span class="required">*</span></label>
+              <div class="time-inputs">
+                <div
+                  v-for="(time, index) in formData.daily_times"
+                  :key="index"
+                  class="time-input-row"
+                >
+                  <input
+                    v-model="formData.daily_times[index]"
+                    type="time"
+                    class="form-input time-input"
+                    required
+                  />
+                  <button
+                    v-if="formData.daily_times.length > 1"
+                    type="button"
+                    @click="removeTime(index)"
+                    class="remove-time-btn"
+                    title="删除此时间"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+              <button
+                v-if="formData.daily_times.length < 10"
+                type="button"
+                @click="addTime"
+                class="add-time-btn"
+              >
+                + 添加时间
+              </button>
+            </div>
+          </div>
+
+          <!-- 每周频率设置 -->
+          <div v-if="formData.frequency_type === 'weekly'" class="frequency-section">
+            <div class="form-group">
+              <label class="form-label">服用日期 <span class="required">*</span></label>
+              <div class="weekday-selector">
+                <label
+                  v-for="day in weekdays"
+                  :key="day.value"
+                  class="weekday-label"
+                  :class="{ active: formData.weekly_days.includes(day.value) }"
+                >
+                  <input
+                    v-model="formData.weekly_days"
+                    type="checkbox"
+                    :value="day.value"
+                    class="weekday-checkbox"
+                  />
+                  <span class="weekday-text">{{ day.label }}</span>
+                </label>
+              </div>
+              <p v-if="formData.weekly_days.length === 0" class="field-hint error">
+                请至少选择一天
+              </p>
             </div>
           </div>
 
@@ -53,7 +145,7 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label">结束日期</label>
+              <label class="form-label">结束日期 <span class="required">*</span></label>
               <input
                 v-model="formData.end_date"
                 type="date"
@@ -137,11 +229,25 @@ const props = defineProps({
 
 const emit = defineEmits(['update:visible', 'submit', 'close'])
 
+// 星期选项
+const weekdays = [
+  { label: '周一', value: 1 },
+  { label: '周二', value: 2 },
+  { label: '周三', value: 3 },
+  { label: '周四', value: 4 },
+  { label: '周五', value: 5 },
+  { label: '周六', value: 6 },
+  { label: '周日', value: 7 }
+]
+
 const isEditing = ref(false)
 const formData = ref({
   name: '',
   dosage: '',
-  frequency: '',
+  frequency_type: 'daily',
+  times_per_day: 1,
+  daily_times: ['08:00'],
+  weekly_days: [],
   start_date: '',
   end_date: '',
   notes: '',
@@ -154,7 +260,10 @@ const resetForm = () => {
   formData.value = {
     name: '',
     dosage: '',
-    frequency: '',
+    frequency_type: 'daily',
+    times_per_day: 1,
+    daily_times: ['08:00'],
+    weekly_days: [],
     start_date: '',
     end_date: '',
     notes: '',
@@ -162,6 +271,36 @@ const resetForm = () => {
   }
   formPhotos.value = []
 }
+
+// 添加时间
+const addTime = () => {
+  if (formData.value.daily_times.length < 10) {
+    formData.value.daily_times.push('08:00')
+  }
+}
+
+// 删除时间
+const removeTime = (index) => {
+  if (formData.value.daily_times.length > 1) {
+    formData.value.daily_times.splice(index, 1)
+  }
+}
+
+// 监听 times_per_day 变化，自动调整 daily_times 数组长度
+watch(() => formData.value.times_per_day, (newVal) => {
+  if (formData.value.frequency_type === 'daily' && newVal) {
+    const currentLength = formData.value.daily_times.length
+    if (newVal > currentLength) {
+      // 增加时间项
+      for (let i = currentLength; i < newVal; i++) {
+        formData.value.daily_times.push('08:00')
+      }
+    } else if (newVal < currentLength) {
+      // 减少时间项
+      formData.value.daily_times = formData.value.daily_times.slice(0, newVal)
+    }
+  }
+})
 
 // 监听 visible 和 medication 变化，初始化表单
 watch([() => props.visible, () => props.medication], ([newVisible, newMedication]) => {
@@ -171,7 +310,10 @@ watch([() => props.visible, () => props.medication], ([newVisible, newMedication
       formData.value = {
         name: newMedication.name || '',
         dosage: newMedication.dosage || '',
-        frequency: newMedication.frequency || '',
+        frequency_type: newMedication.frequency_type || 'daily',
+        times_per_day: newMedication.times_per_day || 1,
+        daily_times: newMedication.daily_times || ['08:00'],
+        weekly_days: newMedication.weekly_days || [],
         start_date: newMedication.start_date || '',
         end_date: newMedication.end_date || '',
         notes: newMedication.notes || '',
@@ -202,23 +344,34 @@ const handleClose = () => {
 
 // 提交表单
 const handleSubmit = () => {
+  // 验证每周类型至少选择一天
+  if (formData.value.frequency_type === 'weekly' && formData.value.weekly_days.length === 0) {
+    return
+  }
+
   const submitData = {
     name: formData.value.name,
+    frequency_type: formData.value.frequency_type,
     start_date: formData.value.start_date
   }
 
   if (formData.value.dosage) submitData.dosage = formData.value.dosage
-  if (formData.value.frequency) submitData.frequency = formData.value.frequency
   if (formData.value.end_date) submitData.end_date = formData.value.end_date
   if (formData.value.notes) submitData.notes = formData.value.notes
   if (isEditing.value) submitData.is_active = formData.value.is_active
 
-  // 添加照片数据（编辑模式下即使为空也要发送，以支持删除操作）
+  // 根据频率类型添加相应字段
+  if (formData.value.frequency_type === 'daily') {
+    submitData.times_per_day = formData.value.times_per_day
+    submitData.daily_times = formData.value.daily_times
+  } else if (formData.value.frequency_type === 'weekly') {
+    submitData.weekly_days = formData.value.weekly_days
+  }
+
+  // 添加照片数据
   if (isEditing.value) {
-    // 编辑模式：始终发送 photos 字段，即使为空
     submitData.photos = formPhotos.value.length > 0 ? JSON.stringify(formPhotos.value) : null
   } else {
-    // 新增模式：只在有照片时发送
     if (formPhotos.value.length > 0) {
       submitData.photos = JSON.stringify(formPhotos.value)
     }
@@ -446,6 +599,122 @@ const handleSubmit = () => {
   transform: scale(0.9);
 }
 
+/* 频率设置区域 */
+.frequency-section {
+  background-color: var(--color-gray-50);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.time-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.time-input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.time-input {
+  flex: 1;
+}
+
+.remove-time-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-error);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  flex-shrink: 0;
+}
+
+.remove-time-btn:hover {
+  background-color: #c53030;
+}
+
+.add-time-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--color-bg-primary);
+  border: 1px dashed var(--color-border-light);
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.add-time-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: var(--color-gray-50);
+}
+
+/* 星期选择器 */
+.weekday-selector {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+}
+
+.weekday-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 0.5rem;
+  background-color: var(--color-bg-primary);
+  border: 2px solid var(--color-border-light);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  user-select: none;
+}
+
+.weekday-label:hover {
+  border-color: var(--color-gray-400);
+  background-color: var(--color-gray-50);
+}
+
+.weekday-label.active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.weekday-checkbox {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.weekday-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.field-hint {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.field-hint.error {
+  color: var(--color-error);
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .form-row {
@@ -454,6 +723,14 @@ const handleSubmit = () => {
 
   .modal-content {
     max-height: 95vh;
+  }
+
+  .weekday-selector {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .weekday-text {
+    font-size: 0.75rem;
   }
 }
 </style>
