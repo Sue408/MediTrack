@@ -1,9 +1,9 @@
 <template>
   <div class="auth-form-container">
-      <div class="content">
-        <Logo size="120px" color="var(--color-primary)" />
-        <h1 class="app-title">MediTrack</h1>
-      </div>
+    <div class="content">
+      <Logo size="120px" color="var(--color-primary)" />
+      <h1 class="app-title">MediTrack</h1>
+    </div>
     <div class="auth-form">
       <!-- 标题 - 添加key实现切换动画 -->
       <transition name="slide-fade" mode="out-in">
@@ -98,7 +98,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { login, register } from '@/api/user'
-import Logo from "@/assets/Logo.vue";
+import Logo from "@/assets/icons/Logo.vue";
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -205,6 +205,7 @@ const handleSubmit = async () => {
   top: 0;
   width: 33.333%;
   height: 100vh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -433,6 +434,7 @@ const handleSubmit = async () => {
 
   .auth-form-container {
     width: 100%;
+    justify-content: flex-start;
     background-color: rgba(255, 255, 255, 0.95);
   }
 }

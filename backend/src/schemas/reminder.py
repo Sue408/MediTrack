@@ -1,42 +1,29 @@
 """
-用药提醒相关的 Pydantic 模式定义
+用药记录相关的 Pydantic 模式定义
 用于请求验证和响应序列化
 """
 from pydantic import BaseModel, Field
-from typing import Optional, List
-from datetime import time, datetime
-
-
-class ReminderBase(BaseModel):
-    """提醒基础模式"""
-    medication_id: int = Field(..., description="药物ID")
-    reminder_time: time = Field(..., description="提醒时间（时:分）")
-    weekdays: List[int] = Field(..., description="星期几（1-7，1表示周一）")
-
-
-class ReminderCreate(ReminderBase):
-    """提醒创建请求模式"""
-    pass
-
-
-class ReminderUpdate(BaseModel):
-    """提醒更新请求模式"""
-    reminder_time: Optional[time] = Field(None, description="提醒时间（时:分）")
-    weekdays: Optional[List[int]] = Field(None, description="星期几（1-7，1表示周一）")
-    is_active: Optional[int] = Field(None, description="是否启用：1-启用，0-禁用")
+from typing import Optional
+from datetime import date, datetime
 
 
 class ReminderResponse(BaseModel):
-    """提醒信息响应模式"""
-    id: int = Field(..., description="提醒ID")
+    """用药记录响应模式"""
+    id: int = Field(..., description="记录ID")
     user_id: int = Field(..., description="用户ID")
     medication_id: int = Field(..., description="药物ID")
-    medication_name: Optional[str] = Field(None, description="药物名称")
-    reminder_time: time = Field(..., description="提醒时间")
-    weekdays: List[int] = Field(..., description="星期几")
-    is_active: int = Field(..., description="是否启用")
+    medication_name: str = Field(..., description="药物名称")
+    dosage: Optional[str] = Field(None, description="剂量")
+    scheduled_date: date = Field(..., description="计划服用日期")
+    scheduled_time: Optional[str] = Field(None, description="计划服用时间")
+    is_completed: bool = Field(..., description="是否已完成")
+    completed_at: Optional[datetime] = Field(None, description="完成时间")
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="更新时间")
 
     class Config:
-        from_attributes = True  # 允许从ORM模型创建
+        from_attributes = True
+
+class RemindersRequest(BaseModel):
+    """生成用药记录请求模式"""
+    days: int = Field(default=7, ge=1, le=90, description="生成未来N天的记录（1-90天）")

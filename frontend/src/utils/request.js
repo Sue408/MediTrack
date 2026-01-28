@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // 创建axios实例
 const request = axios.create({
-  baseURL: 'http://127.0.0.1:8000', // 后端API地址
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api', // 后端API地址
   timeout: 10000, // 请求超时时间
   headers: {
     'Content-Type': 'application/json'

@@ -30,7 +30,7 @@ def _build_medication_response(medication) -> MedicationResponse:
     if medication.daily_times:
         try:
             daily_times = json.loads(medication.daily_times)
-        except:
+        except: # noqa
             daily_times = None
 
     # 解析weekly_days
@@ -38,7 +38,7 @@ def _build_medication_response(medication) -> MedicationResponse:
     if medication.weekly_days:
         try:
             weekly_days = json.loads(medication.weekly_days)
-        except:
+        except: # noqa
             weekly_days = None
 
     return MedicationResponse(

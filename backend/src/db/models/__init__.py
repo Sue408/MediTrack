@@ -1,5 +1,5 @@
 from .user import User
 from .medication import Medication
-from .medication_record import MedicationRecord
+from .reminder import Reminder
 
-__all__ = ['User', 'Medication', 'MedicationRecord']
+__all__ = ['User', 'Medication', 'Reminder']

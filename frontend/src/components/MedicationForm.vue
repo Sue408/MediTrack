@@ -276,6 +276,7 @@ const resetForm = () => {
 const addTime = () => {
   if (formData.value.daily_times.length < 10) {
     formData.value.daily_times.push('08:00')
+    formData.value.times_per_day++
   }
 }
 
@@ -283,6 +284,7 @@ const addTime = () => {
 const removeTime = (index) => {
   if (formData.value.daily_times.length > 1) {
     formData.value.daily_times.splice(index, 1)
+    formData.value.times_per_day--
   }
 }
 

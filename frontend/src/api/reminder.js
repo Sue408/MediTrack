@@ -5,7 +5,7 @@ import request from '@/utils/request'
  * @param {number} days - 生成天数（1-90）
  * @returns {Promise}
  */
-export const generateRecords = (days = 7) => {
+export const generateReminders = (days = 7) => {
   return request({
     url: '/reminder/generate',
     method: 'post',
@@ -18,9 +18,9 @@ export const generateRecords = (days = 7) => {
  * @param {string} date - 日期（YYYY-MM-DD格式），不传则默认今天
  * @returns {Promise}
  */
-export const getRecordsByDate = (date) => {
+export const getRemindersByDate = (date) => {
   return request({
-    url: '/reminder/records',
+    url: '/reminder/',
     method: 'get',
     params: date ? { target_date: date } : {}
   })
@@ -32,9 +32,9 @@ export const getRecordsByDate = (date) => {
  * @param {string} endDate - 结束日期（YYYY-MM-DD格式）
  * @returns {Promise}
  */
-export const getRecordsByRange = (startDate, endDate) => {
+export const getRemindersByRange = (startDate, endDate) => {
   return request({
-    url: '/reminder/records/range',
+    url: '/reminder/range',
     method: 'get',
     params: {
       start_date: startDate,
@@ -48,9 +48,9 @@ export const getRecordsByRange = (startDate, endDate) => {
  * @param {number} recordId - 记录ID
  * @returns {Promise}
  */
-export const completeRecord = (recordId) => {
+export const completeReminder = (recordId) => {
   return request({
-    url: `/reminder/records/${recordId}/complete`,
+    url: `/reminder/${recordId}/complete`,
     method: 'put'
   })
 }
@@ -60,9 +60,9 @@ export const completeRecord = (recordId) => {
  * @param {number} recordId - 记录ID
  * @returns {Promise}
  */
-export const uncompleteRecord = (recordId) => {
+export const uncompleteReminder = (recordId) => {
   return request({
-    url: `/reminder/records/${recordId}/uncomplete`,
+    url: `/reminder/${recordId}/uncomplete`,
     method: 'put'
   })
 }

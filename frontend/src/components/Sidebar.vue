@@ -14,38 +14,10 @@
         class="nav-item"
         active-class="active"
         @click="handleNavClick"
+        replace
       >
         <span class="nav-icon">
-          <!-- 用户图标 -->
-          <svg v-if="item.icon === 'user'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-          <!-- 药丸图标 -->
-          <svg v-else-if="item.icon === 'pill'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M10.5 20.5 10 21a2 2 0 0 1-2.828 0L4.343 18.172a2 2 0 0 1 0-2.828l.5-.5"></path>
-            <path d="m14.5 3.5.5-.5a2 2 0 0 1 2.828 0l2.829 2.828a2 2 0 0 1 0 2.828l-.5.5"></path>
-            <path d="M7.778 15.778 18 5.556"></path>
-            <path d="m7 13 2-2"></path>
-            <path d="m10 16 2-2"></path>
-            <path d="m13 19 2-2"></path>
-          </svg>
-          <!-- 时钟图标 -->
-          <svg v-else-if="item.icon === 'clock'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
-          </svg>
-          <!-- 剪贴板图标 -->
-          <svg v-else-if="item.icon === 'clipboard'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-          </svg>
-          <!-- 图表图标 -->
-          <svg v-else-if="item.icon === 'chart'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10"></line>
-            <line x1="12" y1="20" x2="12" y2="4"></line>
-            <line x1="6" y1="20" x2="6" y2="14"></line>
-          </svg>
+          <img :src="`/icons/${item.icon}.svg`" :alt="item.name" />
         </span>
         <span class="nav-text">{{ item.name }}</span>
       </router-link>
@@ -207,6 +179,12 @@ defineExpose({
 .nav-icon svg {
   width: 100%;
   height: 100%;
+}
+
+.nav-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .nav-text {

@@ -27,7 +27,7 @@
           v-model="selectedDate"
           type="date"
           class="date-input"
-          @change="loadRecords"
+          @change="loadReminders"
         />
         <button @click="goToToday" class="today-btn">今天</button>
       </div>
@@ -40,10 +40,10 @@
     </div>
 
     <!-- 统计信息 -->
-    <div v-if="records.length > 0" class="stats-bar">
+    <div v-if="reminders.length > 0" class="stats-bar">
       <div class="stat-item">
         <span class="stat-label">总计</span>
-        <span class="stat-value">{{ records.length }}</span>
+        <span class="stat-value">{{ reminders.length }}</span>
       </div>
       <div class="stat-item completed">
         <span class="stat-label">已完成</span>
@@ -63,7 +63,7 @@
     <div v-if="loading" class="loading">加载中...</div>
 
     <!-- 空状态 -->
-    <div v-else-if="records.length === 0" class="empty-state">
+    <div v-else-if="reminders.length === 0" class="empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>
         <polyline points="12 6 12 12 16 14"></polyline>
@@ -76,16 +76,16 @@
     <!-- 用药记录列表 -->
     <div v-else class="records-list">
       <div
-        v-for="record in records"
-        :key="record.id"
+        v-for="reminder in reminders"
+        :key="reminder.id"
         class="record-item"
-        :class="{ completed: record.is_completed }"
+        :class="{ completed: reminder.is_completed }"
       >
         <div class="record-checkbox">
           <input
             type="checkbox"
-            :checked="record.is_completed"
-            @change="toggleComplete(record)"
+            :checked="reminder.is_completed"
+            @change="toggleComplete(reminder)"
             class="checkbox-input"
           />
           <span class="checkbox-custom"></span>
@@ -93,17 +93,17 @@
 
         <div class="record-content">
           <div class="record-header">
-            <h3 class="medication-name">{{ record.medication_name }}</h3>
-            <span v-if="record.dosage" class="dosage-badge">{{ record.dosage }}</span>
+            <h3 class="medication-name">{{ reminder.medication_name }}</h3>
+            <span v-if="reminder.dosage" class="dosage-badge">{{ reminder.dosage }}</span>
           </div>
 
           <div class="record-info">
-            <div v-if="record.scheduled_time" class="time-info">
+            <div v-if="reminder.scheduled_time" class="time-info">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
-              <span>{{ record.scheduled_time }}</span>
+              <span>{{ reminder.scheduled_time }}</span>
             </div>
             <div v-else class="time-info">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -115,11 +115,11 @@
               <span>每周服用</span>
             </div>
 
-            <div v-if="record.is_completed && record.completed_at" class="completed-info">
+            <div v-if="reminder.is_completed && reminder.completed_at" class="completed-info">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>{{ formatCompletedTime(record.completed_at) }}</span>
+              <span>{{ formatCompletedTime(reminder.completed_at) }}</span>
             </div>
           </div>
         </div>
@@ -129,14 +129,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { getRecordsByDate, completeRecord, uncompleteRecord, generateRecords } from '@/api/reminder'
+import {computed, onMounted, ref} from 'vue'
+import {useRouter} from 'vue-router'
+import {generateReminders, getRemindersByDate, completeReminder, uncompleteReminder} from '@/api/reminder'
 import toast from '@/utils/toast'
 
 const router = useRouter()
 const loading = ref(false)
-const records = ref([])
+const reminders = ref([])
 const selectedDate = ref(getTodayString())
 
 // 获取今天的日期字符串
@@ -147,24 +147,23 @@ function getTodayString() {
 
 // 统计信息
 const completedCount = computed(() => {
-  return records.value.filter(r => r.is_completed).length
+  return reminders.value.filter(r => r.is_completed).length
 })
 
 const pendingCount = computed(() => {
-  return records.value.filter(r => !r.is_completed).length
+  return reminders.value.filter(r => !r.is_completed).length
 })
 
 const completionRate = computed(() => {
-  if (records.value.length === 0) return 0
-  return Math.round((completedCount.value / records.value.length) * 100)
+  if (reminders.value.length === 0) return 0
+  return Math.round((completedCount.value / reminders.value.length) * 100)
 })
 
-// 加载记录
-const loadRecords = async () => {
+// 加载提醒
+const loadReminders = async () => {
   loading.value = true
   try {
-    const data = await getRecordsByDate(selectedDate.value)
-    records.value = data
+    reminders.value = await getRemindersByDate(selectedDate.value)
   } catch (error) {
     console.error('加载用药记录失败：', error)
     toast.error('加载用药记录失败')
@@ -177,12 +176,12 @@ const loadRecords = async () => {
 const toggleComplete = async (record) => {
   try {
     if (record.is_completed) {
-      await uncompleteRecord(record.id)
+      await uncompleteReminder(record.id)
       record.is_completed = false
       record.completed_at = null
       toast.success('已取消完成')
     } else {
-      const updated = await completeRecord(record.id)
+      const updated = await completeReminder(record.id)
       record.is_completed = true
       record.completed_at = updated.completed_at
       toast.success('已标记为完成')
@@ -196,9 +195,9 @@ const toggleComplete = async (record) => {
 // 生成记录
 const handleGenerateRecords = async () => {
   try {
-    const result = await generateRecords(30) // 生成未来30天的记录
+    const result = await generateReminders(30) // 生成未来30天的记录
     toast.success(result.message)
-    await loadRecords()
+    await loadReminders()
   } catch (error) {
     console.error('生成记录失败：', error)
     toast.error(error.response?.data?.detail || '生成记录失败')
@@ -210,19 +209,19 @@ const previousDay = () => {
   const date = new Date(selectedDate.value)
   date.setDate(date.getDate() - 1)
   selectedDate.value = date.toISOString().split('T')[0]
-  loadRecords()
+  loadReminders()
 }
 
 const nextDay = () => {
   const date = new Date(selectedDate.value)
   date.setDate(date.getDate() + 1)
   selectedDate.value = date.toISOString().split('T')[0]
-  loadRecords()
+  loadReminders()
 }
 
 const goToToday = () => {
   selectedDate.value = getTodayString()
-  loadRecords()
+  loadReminders()
 }
 
 // 前往药物管理
@@ -237,7 +236,7 @@ const formatCompletedTime = (datetime) => {
 }
 
 onMounted(() => {
-  loadRecords()
+  loadReminders()
 })
 </script>
 
@@ -427,7 +426,7 @@ onMounted(() => {
 .empty-state svg {
   width: 80px;
   height: 80px;
-  color: var(--color-gray-400);
+  color: var(--color-gray-800);
   margin-bottom: 1rem;
 }
 

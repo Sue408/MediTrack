@@ -34,7 +34,15 @@
 
     <!-- 空状态 -->
     <div v-else class="empty-state">
-      <div class="empty-icon">💊</div>
+      <div class="empty-icon">
+        <svg t="1769580221309" class="icon"
+         viewBox="0 0 1024 1024" version="1.1"
+          xmlns="http://www.w3.org/2000/svg"
+           p-id="4912" xmlns:xlink="http://www.w3.org/1999/xlink"
+            width="200"
+             height="200">
+            <path d="M304.128 371.712q-14.336 0-21.504-5.12t-10.24-12.288q-4.096-8.192-4.096-18.432l0-67.584q0-19.456 7.68-29.184t16.896-14.848q11.264-5.12 24.576-5.12l396.288 0q13.312 0 24.576 5.12 9.216 5.12 16.896 14.848t7.68 29.184l0 67.584q0 10.24-4.096 18.432-3.072 7.168-9.728 12.288t-20.992 5.12l-423.936 0zM837.632 943.104q0 22.528-8.192 40.96-7.168 15.36-22.016 27.648t-42.496 12.288l-497.664 0q-28.672 0-43.008-12.288t-21.504-27.648q-8.192-18.432-9.216-40.96l0-382.976q0-33.792 12.288-48.128t22.528-24.576l72.704-67.584 443.392 0 58.368 67.584q10.24 10.24 22.528 24.576t12.288 48.128l0 382.976zM677.888 678.912l-107.52 0 0-108.544-109.568 0 0 108.544-107.52 0 0 109.568 107.52 0 0 107.52 109.568 0 0-107.52 107.52 0 0-109.568z" p-id="4913"></path></svg>
+      </div>
       <p class="empty-text">
         {{ searchQuery || filterStatus !== 'all' ? '未找到匹配的药物' : '暂无药物记录' }}
       </p>
@@ -278,8 +286,16 @@ onMounted(async () => {
 }
 
 .empty-icon {
-  font-size: 5rem;
-  margin-bottom: 1rem;
+  transform: scale(0.5);
+  color: var(--color-gray-800);
+  margin-bottom: 1.5rem;
+  opacity: 0.6;
+  transition: all var(--transition-base);
+}
+
+.empty-state:hover .empty-icon {
+  opacity: 0.8;
+  transform: scale(0.55);
 }
 
 .empty-text {

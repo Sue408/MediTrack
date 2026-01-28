@@ -1,141 +1,231 @@
 """
 用药提醒业务逻辑层
-处理提醒相关的业务逻辑
+处理用药提醒的生成、查询和更新
 """
-from typing import List, Optional
+from datetime import datetime, date, timedelta
+from typing import List
 from sqlalchemy.orm import Session
-from datetime import datetime
+from typing import Any
 import json
-
-from ..db.models.reminder import Reminder
 from ..db.models.medication import Medication
-from ..schemas.reminder import ReminderCreate, ReminderUpdate
+from ..db.models.reminder import Reminder
 
 
-def create_reminder(db: Session, user_id: int, reminder_data: ReminderCreate) -> Reminder:
+def generate_reminders_for_user(db: Session, user_id: int, days: int = 7) -> int:
     """
-    创建用药提醒
+    为用户生成未来N天的用药提醒
     :param db: 数据库会话
     :param user_id: 用户ID
-    :param reminder_data: 提醒创建数据
-    :return: 创建的提醒对象
+    :param days: 生成天数
+    :return: 生成的记录数量
     """
-    # 验证药物是否属于该用户
-    medication = db.query(Medication).filter(
-        Medication.id == reminder_data.medication_id,
-        Medication.user_id == user_id
-    ).first()
+    # 获取用户所有激活的药物
+    medications:List[Any] = db.query(Medication).filter(
+        Medication.user_id == user_id,
+        Medication.is_active == 1
+    ).all()
 
-    if not medication:
-        return None
+    today = date.today() # 获取当前时间
+    generated_count = 0 # 初始化记录数量
 
-    # 创建提醒对象
-    db_reminder = Reminder(
-        user_id=user_id,
-        medication_id=reminder_data.medication_id,
-        reminder_time=reminder_data.reminder_time,
-        weekdays=json.dumps(reminder_data.weekdays),  # 转换为JSON字符串
-        is_active=1
-    )
+    for med in medications:
+        # 为每一天生成记录
+        for day_offset in range(days):
+            target_date = today + timedelta(days=day_offset)
 
-    # 保存到数据库
-    db.add(db_reminder)
+            # 检查是否在药物有效期内
+            if target_date < med.start_date or target_date > med.end_date:
+                continue
+
+            # 根据频率类型生成记录
+            if med.frequency_type == "daily":
+                # 每日类型：为每个时间点生成记录
+                daily_times = []
+                if med.daily_times:
+                    try:
+                        daily_times = json.loads(med.daily_times) # noqa
+                    except: # noqa
+                        pass
+
+                for time_str in daily_times:
+                    # 检查是否已存在该记录
+                    existing = db.query(Reminder).filter(
+                        Reminder.user_id == user_id,
+                        Reminder.medication_id == med.id,
+                        Reminder.scheduled_date == target_date,
+                        Reminder.scheduled_time == time_str
+                    ).first()
+
+                    # 如果存在则添加相关记录
+                    if not existing:
+                        reminder = Reminder(
+                            user_id=user_id,
+                            medication_id=med.id,
+                            scheduled_date=target_date,
+                            scheduled_time=time_str,
+                            is_completed=False
+                        )
+                        db.add(reminder)
+                        generated_count += 1
+
+            elif med.frequency_type == "weekly":
+                # 每周类型：检查今天是否在服用日期中
+                weekly_days = []
+                if med.weekly_days:
+                    try:
+                        weekly_days = json.loads(med.weekly_days)
+                    except: # noqa
+                        pass
+
+                target_weekday = target_date.isoweekday()  # 1=周一, 7=周日
+                if target_weekday in weekly_days:
+                    # 检查是否已存在该记录
+                    existing = db.query(Reminder).filter(
+                        Reminder.user_id == user_id,
+                        Reminder.medication_id == med.id,
+                        Reminder.scheduled_date == target_date
+                    ).first()
+
+                    if not existing:
+                        record = Reminder(
+                            user_id=user_id,
+                            medication_id=med.id,
+                            scheduled_date=target_date,
+                            scheduled_time=None,  # 每周类型没有具体时间 # noqa
+                            is_completed=False
+                        )
+                        db.add(record)
+                        generated_count += 1
+
     db.commit()
-    db.refresh(db_reminder)
-
-    return db_reminder
+    return generated_count
 
 
-def get_reminders_by_user(db: Session, user_id: int, is_active: Optional[int] = None) -> List[Reminder]:
+def get_reminders_by_date(db: Session, user_id: int, target_date: date) -> List[dict]:
     """
-    获取用户的所有提醒
+    获取指定日期的用药提醒
     :param db: 数据库会话
     :param user_id: 用户ID
-    :param is_active: 是否只获取启用的提醒
-    :return: 提醒列表
+    :param target_date: 目标日期
+    :return: 用药记录列表
     """
-    query = db.query(Reminder).filter(Reminder.user_id == user_id)
+    # 获取查询记录 [(药物记录, 药物数据)] (nulls last-空值排在前面)
+    reminders = db.query(Reminder, Medication).join(
+        Medication, Reminder.medication_id == Medication.id
+    ).filter(
+        Reminder.user_id == user_id,
+        Reminder.scheduled_date == target_date
+    ).order_by(
+        Reminder.scheduled_time.asc().nullslast()
+    ).all()
 
-    if is_active is not None:
-        query = query.filter(Reminder.is_active == is_active)
+    # noinspection DuplicatedCode
+    result = []
+    for reminder, medication in reminders:
+        result.append({
+            "id": reminder.id,
+            "user_id": reminder.user_id,
+            "medication_id": reminder.medication_id,
+            "medication_name": medication.name,
+            "dosage": medication.dosage,
+            "scheduled_date": reminder.scheduled_date,
+            "scheduled_time": reminder.scheduled_time,
+            "is_completed": reminder.is_completed,
+            "completed_at": reminder.completed_at,
+            "created_at": reminder.created_at,
+            "updated_at": reminder.updated_at
+        })
 
-    return query.order_by(Reminder.reminder_time).all()
+    return result
 
 
-def get_reminder_by_id(db: Session, reminder_id: int, user_id: int) -> Optional[Reminder]:
+def complete_reminder(db: Session, reminder_id: int, user_id: int) -> type[Reminder] | None:
     """
-    根据ID获取提醒（验证所有权）
+    标记用药提醒为已完成
     :param db: 数据库会话
-    :param reminder_id: 提醒ID
+    :param reminder_id: 记录ID
     :param user_id: 用户ID
-    :return: 提醒对象或None
+    :return: 更新后的记录或None
     """
-    return db.query(Reminder).filter(
+    reminder = db.query(Reminder).filter(
         Reminder.id == reminder_id,
         Reminder.user_id == user_id
     ).first()
 
-
-def update_reminder(db: Session, reminder_id: int, user_id: int, reminder_data: ReminderUpdate) -> Optional[Reminder]:
-    """
-    更新提醒信息
-    :param db: 数据库会话
-    :param reminder_id: 提醒ID
-    :param user_id: 用户ID
-    :param reminder_data: 更新数据
-    :return: 更新后的提醒对象或None
-    """
-    # 查询提醒（验证所有权）
-    reminder = get_reminder_by_id(db, reminder_id, user_id)
     if not reminder:
         return None
 
-    # 更新字段
-    if reminder_data.reminder_time is not None:
-        reminder.reminder_time = reminder_data.reminder_time
-    if reminder_data.weekdays is not None:
-        reminder.weekdays = json.dumps(reminder_data.weekdays)
-    if reminder_data.is_active is not None:
-        reminder.is_active = reminder_data.is_active
-
+    reminder.is_completed = True
+    reminder.completed_at = datetime.now()
     reminder.updated_at = datetime.now()
 
-    # 保存到数据库
     db.commit()
     db.refresh(reminder)
 
     return reminder
 
 
-def delete_reminder(db: Session, reminder_id: int, user_id: int) -> bool:
+def uncomplete_reminder(db: Session, reminder_id: int, user_id: int) -> type[Reminder] | None:
     """
-    删除提醒
+    取消用药记录的完成状态
     :param db: 数据库会话
-    :param reminder_id: 提醒ID
+    :param reminder_id: 记录ID
     :param user_id: 用户ID
-    :return: 是否删除成功
+    :return: 更新后的记录或None
     """
-    # 查询提醒（验证所有权）
-    reminder = get_reminder_by_id(db, reminder_id, user_id)
-    if not reminder:
-        return False
-
-    # 删除提醒
-    db.delete(reminder)
-    db.commit()
-
-    return True
-
-
-def get_reminders_by_medication(db: Session, medication_id: int, user_id: int) -> List[Reminder]:
-    """
-    获取指定药物的所有提醒
-    :param db: 数据库会话
-    :param medication_id: 药物ID
-    :param user_id: 用户ID
-    :return: 提醒列表
-    """
-    return db.query(Reminder).filter(
-        Reminder.medication_id == medication_id,
+    reminder = db.query(Reminder).filter(
+        Reminder.id == reminder_id,
         Reminder.user_id == user_id
-    ).order_by(Reminder.reminder_time).all()
+    ).first()
+
+    if not reminder:
+        return None
+
+    reminder.is_completed = False
+    reminder.completed_at = None
+    reminder.updated_at = datetime.now()
+
+    db.commit()
+    db.refresh(reminder)
+
+    return reminder
+
+
+def get_date_range_reminders(db: Session, user_id: int, start_date: date, end_date: date) -> List[dict]:
+    """
+    获取日期范围内的用药记录
+    :param db: 数据库会话
+    :param user_id: 用户ID
+    :param start_date: 开始日期
+    :param end_date: 结束日期
+    :return: 用药记录列表
+    """
+    reminders = db.query(Reminder, Medication).join(
+        Medication, Reminder.medication_id == Medication.id
+    ).filter(
+        Reminder.user_id == user_id,
+        Reminder.scheduled_date >= start_date,
+        Reminder.scheduled_date <= end_date
+    ).order_by(
+        Reminder.scheduled_date.asc(),
+        Reminder.scheduled_time.asc().nullslast()
+    ).all()
+
+    # noinspection DuplicatedCode
+    result = []
+    for reminder, medication in reminders:
+        result.append({
+            "id": reminder.id,
+            "user_id": reminder.user_id,
+            "medication_id": reminder.medication_id,
+            "medication_name": medication.name,
+            "dosage": medication.dosage,
+            "scheduled_date": reminder.scheduled_date,
+            "scheduled_time": reminder.scheduled_time,
+            "is_completed": reminder.is_completed,
+            "completed_at": reminder.completed_at,
+            "created_at": reminder.created_at,
+            "updated_at": reminder.updated_at
+        })
+
+    return result

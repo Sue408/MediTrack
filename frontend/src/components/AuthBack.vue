@@ -6,7 +6,7 @@
     <!-- 右侧展示区域 -->
     <div class="right-section">
       <div class="content">
-        <Logo size="120px" color="var(--color-primary)" />
+        <Logo size="120px" />
         <h1 class="app-title">MediTrack</h1>
         <p class="app-description">
           智能药物管理平台
@@ -67,7 +67,7 @@
 </template>
 
 <script setup>
-import Logo from '@/assets/Logo.vue'
+import Logo from '@/assets/icons/Logo.vue'
 </script>
 
 <style scoped>

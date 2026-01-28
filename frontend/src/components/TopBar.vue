@@ -27,7 +27,7 @@
 import { computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import Logo from '@/assets/Logo.vue'
+import Logo from '@/assets/icons/Logo.vue'
 import confirm from '@/utils/confirm'
 
 const router = useRouter()
@@ -182,7 +182,7 @@ const handleLogout = async () => {
   }
 
   .app-name {
-    font-size: 1.2rem;
+    display: none;
   }
 
   .username {

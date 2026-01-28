@@ -76,6 +76,7 @@ def get_medication_by_id(db: Session, medication_id: int, user_id: int) -> Optio
     ).first()
 
 
+# noinspection DuplicatedCode
 def update_medication(
     db: Session,
     medication_id: int,
@@ -118,7 +119,6 @@ def update_medication(
     if medication_data.is_active is not None:
         medication.is_active = medication_data.is_active
     medication.photos = medication_data.photos
-
     medication.updated_at = datetime.now(timezone.utc)
 
     # 保存到数据库
