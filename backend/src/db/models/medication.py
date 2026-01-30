@@ -1,7 +1,7 @@
 """
 药物数据表定义
 """
-from sqlalchemy import Column, Integer, String, Date, DateTime, Text, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, Date, DateTime, Text, ForeignKey, Index, Boolean
 from datetime import datetime
 from ..database import Base
 
@@ -13,8 +13,8 @@ class Medication(Base):
     # 主键ID
     id = Column(Integer, primary_key=True, index=True, autoincrement=True, comment="药物ID")
 
-    # 用户ID（外键）
-    user_id = Column(Integer, ForeignKey('user.id'), nullable=False, index=True, comment="用户ID")
+    # 用户ID（外键，UUID类型）
+    user_id = Column(String(36), ForeignKey('user_profiles.id'), nullable=False, index=True, comment="用户ID")
 
     # 药物名称
     name = Column(String(100), nullable=False, comment="药物名称")
@@ -49,8 +49,45 @@ class Medication(Base):
     # 条形码
     barcode = Column(String(100), nullable=True, comment="药品条形码")
 
-    # 是否激活
-    is_active = Column(Integer, default=1, comment="是否激活：1-激活，0-停用")
+    # ========== 外部药物数据库相关字段 ==========
+    # 药品编码（国药准字号）
+    drug_code = Column(String(100), nullable=True, comment="药品编码（国药准字号）")
+
+    # 生产厂家
+    manufacturer = Column(String(200), nullable=True, comment="生产厂家")
+
+    # 包装规格（如"10mg*24片"）
+    specification = Column(String(100), nullable=True, comment="包装规格")
+
+    # 产品剂型（片剂、胶囊、注射液等）
+    dosage_form = Column(String(50), nullable=True, comment="产品剂型")
+
+    # 是否为处方药（布尔类型）
+    is_prescription = Column(Boolean, default=False, comment="是否为处方药")
+
+    # 药品官方图片URL
+    drug_image_url = Column(String(500), nullable=True, comment="药品官方图片URL")
+
+    # 说明书内容（JSON格式存储）
+    instruction_manual = Column(Text, nullable=True, comment="说明书内容JSON格式")
+
+    # 批准文号
+    approval_number = Column(String(100), nullable=True, comment="批准文号")
+
+    # 通用名
+    generic_name = Column(String(200), nullable=True, comment="通用名")
+
+    # 商品名
+    trade_name = Column(String(200), nullable=True, comment="商品名")
+
+    # 数据来源（manual-手动录入, api-外部API）
+    data_source = Column(String(20), default="manual", comment="数据来源：manual-手动录入，api-外部API")
+
+    # 外部数据库药物ID
+    external_drug_id = Column(String(100), nullable=True, comment="外部数据库药物ID")
+
+    # 是否激活（布尔类型）
+    is_active = Column(Boolean, default=True, comment="是否激活")
 
     # 创建时间
     created_at = Column(DateTime, default=datetime.now, comment="创建时间")

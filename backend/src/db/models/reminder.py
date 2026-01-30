@@ -14,8 +14,8 @@ class Reminder(Base):
     # 主键ID
     id = Column(Integer, primary_key=True, index=True, autoincrement=True, comment="记录ID")
 
-    # 用户ID（外键）
-    user_id = Column(Integer, ForeignKey('user.id'), nullable=False, index=True, comment="用户ID")
+    # 用户ID（外键，UUID类型）
+    user_id = Column(String(36), ForeignKey('user_profiles.id'), nullable=False, index=True, comment="用户ID")
 
     # 药物ID（外键）
     medication_id = Column(Integer, ForeignKey('medication.id'), nullable=False, index=True, comment="药物ID")

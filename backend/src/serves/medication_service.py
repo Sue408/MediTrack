@@ -10,7 +10,7 @@ from ..db.models.medication import Medication
 from ..schemas.medication import MedicationCreate, MedicationUpdate
 
 
-def create_medication(db: Session, user_id: int, medication_data: MedicationCreate) -> Medication:
+def create_medication(db: Session, user_id: str, medication_data: MedicationCreate) -> Medication:
     """
     创建新药物记录
     :param db: 数据库会话
@@ -41,7 +41,19 @@ def create_medication(db: Session, user_id: int, medication_data: MedicationCrea
         notes=medication_data.notes,
         photos=medication_data.photos,
         barcode=medication_data.barcode,
-        is_active=1
+        # 外部药物数据库相关字段
+        drug_code=medication_data.drug_code,
+        manufacturer=medication_data.manufacturer,
+        specification=medication_data.specification,
+        dosage_form=medication_data.dosage_form,
+        is_prescription=medication_data.is_prescription,
+        drug_image_url=medication_data.drug_image_url,
+        instruction_manual=medication_data.instruction_manual,
+        approval_number=medication_data.approval_number,
+        generic_name=medication_data.generic_name,
+        trade_name=medication_data.trade_name,
+        data_source=medication_data.data_source or "manual",
+        external_drug_id=medication_data.external_drug_id
     )
 
     # 保存到数据库
@@ -52,7 +64,7 @@ def create_medication(db: Session, user_id: int, medication_data: MedicationCrea
     return db_medication
 
 
-def get_user_medications(db: Session, user_id: int) -> List[Medication]:
+def get_user_medications(db: Session, user_id: str) -> List[Medication]:
     """
     获取用户的所有药物记录
     :param db: 数据库会话
@@ -62,7 +74,7 @@ def get_user_medications(db: Session, user_id: int) -> List[Medication]:
     return db.query(Medication).filter(Medication.user_id == user_id).all() # noqa
 
 
-def get_medication_by_id(db: Session, medication_id: int, user_id: int) -> Optional[Medication]:
+def get_medication_by_id(db: Session, medication_id: int, user_id: str) -> Optional[Medication]:
     """
     获取指定药物记录（验证所有权）
     :param db: 数据库会话
@@ -76,11 +88,10 @@ def get_medication_by_id(db: Session, medication_id: int, user_id: int) -> Optio
     ).first()
 
 
-# noinspection DuplicatedCode
 def update_medication(
     db: Session,
     medication_id: int,
-    user_id: int,
+    user_id: str,
     medication_data: MedicationUpdate
 ) -> Optional[Medication]:
     """
@@ -95,30 +106,20 @@ def update_medication(
     if not medication:
         return None
 
-    # 更新字段（只更新提供的字段）
-    if medication_data.name is not None:
-        medication.name = medication_data.name
-    if medication_data.dosage is not None:
-        medication.dosage = medication_data.dosage
-    if medication_data.frequency_type is not None:
-        medication.frequency_type = medication_data.frequency_type
-    if medication_data.times_per_day is not None:
-        medication.times_per_day = medication_data.times_per_day
-    if medication_data.daily_times is not None:
-        medication.daily_times = json.dumps(medication_data.daily_times)
-    if medication_data.weekly_days is not None:
-        medication.weekly_days = json.dumps(medication_data.weekly_days)
-    if medication_data.start_date is not None:
-        medication.start_date = medication_data.start_date
-    if medication_data.end_date is not None:
-        medication.end_date = medication_data.end_date
-    if medication_data.notes is not None:
-        medication.notes = medication_data.notes
-    if medication_data.barcode is not None:
-        medication.barcode = medication_data.barcode
-    if medication_data.is_active is not None:
-        medication.is_active = medication_data.is_active
-    medication.photos = medication_data.photos
+    # 只获取实际提供的字段（排除未设置的字段）
+    update_dict = medication_data.model_dump(exclude_unset=True)
+
+    # 处理需要JSON序列化的字段
+    if 'daily_times' in update_dict and update_dict['daily_times'] is not None:
+        update_dict['daily_times'] = json.dumps(update_dict['daily_times'])
+    if 'weekly_days' in update_dict and update_dict['weekly_days'] is not None:
+        update_dict['weekly_days'] = json.dumps(update_dict['weekly_days'])
+
+    # 批量更新所有字段
+    for key, value in update_dict.items():
+        setattr(medication, key, value)
+
+    # 更新时间戳
     medication.updated_at = datetime.now(timezone.utc)
 
     # 保存到数据库
@@ -128,7 +129,7 @@ def update_medication(
     return medication
 
 
-def delete_medication(db: Session, medication_id: int, user_id: int) -> bool:
+def delete_medication(db: Session, medication_id: int, user_id: str) -> bool:
     """
     删除药物记录
     :param db: 数据库会话

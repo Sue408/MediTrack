@@ -11,7 +11,7 @@ from ..db.models.medication import Medication
 from ..db.models.reminder import Reminder
 
 
-def generate_reminders_for_user(db: Session, user_id: int, days: int = 7) -> int:
+def generate_reminders_for_user(db: Session, user_id: str, days: int = 7) -> int:
     """
     为用户生成未来N天的用药提醒
     :param db: 数据库会话
@@ -22,7 +22,7 @@ def generate_reminders_for_user(db: Session, user_id: int, days: int = 7) -> int
     # 获取用户所有激活的药物
     medications:List[Any] = db.query(Medication).filter(
         Medication.user_id == user_id,
-        Medication.is_active == 1
+        Medication.is_active == True
     ).all()
 
     today = date.today() # 获取当前时间
@@ -101,7 +101,7 @@ def generate_reminders_for_user(db: Session, user_id: int, days: int = 7) -> int
     return generated_count
 
 
-def get_reminders_by_date(db: Session, user_id: int, target_date: date) -> List[dict]:
+def get_reminders_by_date(db: Session, user_id: str, target_date: date) -> List[dict]:
     """
     获取指定日期的用药提醒
     :param db: 数据库会话
@@ -139,12 +139,12 @@ def get_reminders_by_date(db: Session, user_id: int, target_date: date) -> List[
     return result
 
 
-def complete_reminder(db: Session, reminder_id: int, user_id: int) -> type[Reminder] | None:
+def complete_reminder(db: Session, reminder_id: int, user_id: str) -> type[Reminder] | None:
     """
     标记用药提醒为已完成
     :param db: 数据库会话
     :param reminder_id: 记录ID
-    :param user_id: 用户ID
+    :param user_id: 用户UUID
     :return: 更新后的记录或None
     """
     reminder = db.query(Reminder).filter(
@@ -165,7 +165,7 @@ def complete_reminder(db: Session, reminder_id: int, user_id: int) -> type[Remin
     return reminder
 
 
-def uncomplete_reminder(db: Session, reminder_id: int, user_id: int) -> type[Reminder] | None:
+def uncomplete_reminder(db: Session, reminder_id: int, user_id: str) -> type[Reminder] | None:
     """
     取消用药记录的完成状态
     :param db: 数据库会话
@@ -191,7 +191,7 @@ def uncomplete_reminder(db: Session, reminder_id: int, user_id: int) -> type[Rem
     return reminder
 
 
-def get_date_range_reminders(db: Session, user_id: int, start_date: date, end_date: date) -> List[dict]:
+def get_date_range_reminders(db: Session, user_id: str, start_date: date, end_date: date) -> List[dict]:
     """
     获取日期范围内的用药记录
     :param db: 数据库会话

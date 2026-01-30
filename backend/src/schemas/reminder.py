@@ -6,11 +6,10 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import date, datetime
 
-
 class ReminderResponse(BaseModel):
     """用药记录响应模式"""
     id: int = Field(..., description="记录ID")
-    user_id: int = Field(..., description="用户ID")
+    user_id: str = Field(..., description="用户UUID")
     medication_id: int = Field(..., description="药物ID")
     medication_name: str = Field(..., description="药物名称")
     dosage: Optional[str] = Field(None, description="剂量")

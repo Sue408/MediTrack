@@ -67,7 +67,7 @@
 </template>
 
 <script setup>
-import Logo from '@/assets/icons/Logo.vue'
+import Logo from '@/assets/Logo.vue'
 </script>
 
 <style scoped>

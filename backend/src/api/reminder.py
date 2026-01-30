@@ -13,7 +13,7 @@ from ..serves import reminder_service
 from .user import get_current_user
 
 # 创建路由器
-router = APIRouter(prefix="/reminder", tags=["用药提醒"])
+router = APIRouter(prefix="/reminders", tags=["用药提醒"])
 
 
 @router.post("/generate")
@@ -38,7 +38,7 @@ async def generate_records(
     }
 
 
-@router.get("/")
+@router.get("")
 async def get_records_by_date(
     target_date: Optional[date] = Query(None, description="目标日期，默认为今天"),
     current_user: UserResponse = Depends(get_current_user),
@@ -114,7 +114,7 @@ async def complete_record(
 
     return {
         "id": reminder.id,
-        "user_id": reminder.user_id,
+        "user_id": str(reminder.user_id),
         "medication_id": reminder.medication_id,
         "medication_name": medication.name if medication else "",
         "dosage": medication.dosage if medication else None,
@@ -140,9 +140,9 @@ async def uncomplete_reminder(
     :param db: 数据库会话
     :return: 更新后的提醒
     """
-    record = reminder_service.uncomplete_reminder(db, reminder_id, current_user.id)
+    reminder = reminder_service.uncomplete_reminder(db, reminder_id, current_user.id)
     # noinspection DuplicatedCode
-    if not record:
+    if not reminder:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="用药提醒不存在"
@@ -150,19 +150,19 @@ async def uncomplete_reminder(
 
     # 获取药物信息
     from ..db.models.medication import Medication
-    medication = db.query(Medication).filter(Medication.id == record.medication_id).first()
+    medication = db.query(Medication).filter(Medication.id == reminder.medication_id).first()
 
     return {
-        "id": record.id,
-        "user_id": record.user_id,
-        "medication_id": record.medication_id,
+        "id": reminder.id,
+        "user_id": str(reminder.user_id),
+        "medication_id": reminder.medication_id,
         "medication_name": medication.name if medication else "",
         "dosage": medication.dosage if medication else None,
-        "scheduled_date": record.scheduled_date,
-        "scheduled_time": record.scheduled_time,
-        "is_completed": record.is_completed,
-        "completed_at": record.completed_at,
-        "created_at": record.created_at,
-        "updated_at": record.updated_at
+        "scheduled_date": reminder.scheduled_date,
+        "scheduled_time": reminder.scheduled_time,
+        "is_completed": reminder.is_completed,
+        "completed_at": reminder.completed_at,
+        "created_at": reminder.created_at,
+        "updated_at": reminder.updated_at
     }
 

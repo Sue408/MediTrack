@@ -6,8 +6,8 @@
 </template>
 
 <script setup>
-import AuthBack from '@/components/AuthBack.vue'
-import AuthForm from '@/components/AuthForm.vue'
+import AuthBack from '@/components/auth/AuthBack.vue'
+import AuthForm from '@/components/auth/AuthForm.vue'
 </script>
 
 <style scoped>

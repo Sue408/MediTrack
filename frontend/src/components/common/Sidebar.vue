@@ -77,7 +77,7 @@ const closeSidebar = () => {
   isOpen.value = false
 }
 
-// 导航点击处理（移动端自动关闭）
+// 导航点击处理（移动端会触发自动关闭）
 const handleNavClick = () => {
   if (isMobile.value) {
     closeSidebar()
@@ -85,12 +85,12 @@ const handleNavClick = () => {
 }
 
 onMounted(() => {
-  checkMobile()
-  window.addEventListener('resize', checkMobile)
+  checkMobile() // 挂载时自动检查是否为移动端
+  window.addEventListener('resize', checkMobile) // 监听窗口尺寸变化实时检查是否为移动端S
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', checkMobile)
+  window.removeEventListener('resize', checkMobile) // 卸载时移除监听事件
 })
 
 // 暴露方法给父组件

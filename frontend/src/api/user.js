@@ -1,43 +1,12 @@
 import request from '@/utils/request'
 
 /**
- * 用户注册
- * @param {Object} data - 注册数据
- * @param {string} data.username - 用户名
- * @param {string} data.email - 邮箱
- * @param {string} data.password - 密码
- * @returns {Promise}
- */
-export const register = (data) => {
-  return request({
-    url: '/user/register',
-    method: 'post',
-    data
-  })
-}
-
-/**
- * 用户登录
- * @param {Object} data - 登录数据
- * @param {string} data.username - 用户名或邮箱
- * @param {string} data.password - 密码
- * @returns {Promise}
- */
-export const login = (data) => {
-  return request({
-    url: '/user/login',
-    method: 'post',
-    data
-  })
-}
-
-/**
  * 获取当前用户信息
  * @returns {Promise}
  */
-export const getCurrentUser = () => {
+export const getUserInfo = () => {
   return request({
-    url: '/user/me',
+    url: '/users/me',
     method: 'get'
   })
 }
@@ -47,9 +16,9 @@ export const getCurrentUser = () => {
  * @param {Object} data - 更新数据
  * @returns {Promise}
  */
-export const updateCurrentUser = (data) => {
+export const updateUserInfo = (data) => {
   return request({
-    url: '/user/me',
+    url: '/users/me',
     method: 'put',
     data
   })
@@ -63,7 +32,7 @@ export const updateCurrentUser = (data) => {
  */
 export const uploadAvatar = (data) => {
   return request({
-    url: '/user/avatar',
+    url: '/users/avatar',
     method: 'post',
     data
   })

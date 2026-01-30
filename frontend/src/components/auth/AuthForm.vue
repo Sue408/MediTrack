@@ -97,28 +97,30 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { login, register } from '@/api/user'
-import Logo from "@/assets/icons/Logo.vue";
+import { signIn, signUp } from '@/utils/supabase'
+import { getUserInfo } from '@/api/user'
+import Logo from "@/assets/Logo.vue";
 
+// 获取路由管理和全局用户状态
 const router = useRouter()
 const userStore = useUserStore()
 
-const isLogin = ref(true)
-const loading = ref(false)
-const errorMessage = ref('')
+const isLogin = ref(true) // 是否为登录模式
+const loading = ref(false) // 是否正在加载 (控制加载动画)
+const errorMessage = ref('') // 错误信息 (控制错误信息显示)
 
 const formData = reactive({
   username: '',
   email: '',
   password: '',
   confirmPassword: ''
-})
+}) // 表单数据，其中email,password同时绑定登录输入和注册输入
 
 // 切换登录/注册模式
 const toggleMode = () => {
-  isLogin.value = !isLogin.value
-  errorMessage.value = ''
-  // 清空表单
+  isLogin.value = !isLogin.value // 切换登录/注册模式
+  errorMessage.value = '' // 清空错误信息以移除错误提示
+  // 清空表单 (reactive对象无法整体赋值重置)
   formData.username = ''
   formData.email = ''
   formData.password = ''
@@ -127,22 +129,24 @@ const toggleMode = () => {
 
 // 表单验证
 const validateForm = () => {
-  if (!isLogin.value) {
+  if (!isLogin.value) { // 注册模式验证
+    // 1. 检查是否输入用户名
     if (!formData.username.trim()) {
       errorMessage.value = '请输入用户名'
       return false
     }
+    // 检查两次输入的密码是否一致
     if (formData.password !== formData.confirmPassword) {
       errorMessage.value = '两次输入的密码不一致'
       return false
     }
   }
-
+  // 检查是否输入邮箱
   if (!formData.email.trim()) {
     errorMessage.value = '请输入邮箱'
     return false
   }
-
+  // 检查密码长度
   if (formData.password.length < 6) {
     errorMessage.value = '密码长度至少为6位'
     return false
@@ -151,49 +155,91 @@ const validateForm = () => {
   return true
 }
 
+// 处理认证成功后的逻辑（登录和注册共用）
+const handleAuthSuccess = async (session) => {
+  // 保存 token 到 store
+  if (session?.access_token) {
+    userStore.setToken(session.access_token)
+  }
+
+  // 等待 Supabase session 完全保存到 localStorage
+  await new Promise(resolve => setTimeout(resolve, 100))
+
+  // 获取用户 profile 信息
+  const userProfile = await getUserInfo()
+
+  // 保存用户信息
+  userStore.setUser(userProfile)
+
+  // 跳转到首页
+  await router.push('/home')
+}
+
 // 提交表单
 const handleSubmit = async () => {
+  // 清除错误信息
   errorMessage.value = ''
 
+  // 表单验证
   if (!validateForm()) {
     return
   }
 
+  // 显示加载状态
   loading.value = true
 
   try {
     if (isLogin.value) {
-      // 登录
-      const response = await login({
-        username: formData.email,
-        password: formData.password
-      })
+      // 登录流程
+      const { session, error } = await signIn(formData.email, formData.password)
 
-      // 保存用户信息和token
-      userStore.setUser(response.user)
-      userStore.setToken(response.access_token)
+      if (error) {
+        throw new Error(error.message)
+      }
 
-      // 跳转到首页
-      await router.push('/home')
+      await handleAuthSuccess(session)
+
     } else {
-      // 注册
-      const response = await register({
-        username: formData.username,
-        email: formData.email,
-        password: formData.password
-      })
+      // 注册流程
+      const { session, error } = await signUp(
+        formData.email,
+        formData.password,
+        formData.username
+      )
 
-      // 保存用户信息和token
-      userStore.setUser(response.user)
-      userStore.setToken(response.access_token)
+      if (error) {
+        throw new Error(error.message)
+      }
 
-      // 跳转到首页
-      await router.push('/home')
+      // 检查是否需要邮箱验证
+      if (session) {
+        // 注册成功且已自动登录（未启用邮箱验证）
+        errorMessage.value = '注册成功！'
+        await handleAuthSuccess(session)
+      } else {
+        // 需要邮箱验证
+        errorMessage.value = '注册成功！请检查邮箱验证链接'
+        setTimeout(() => {
+          toggleMode()
+        }, 3000)
+      }
     }
   } catch (error) {
-    errorMessage.value = error.response?.data?.detail || error.message || '操作失败，请重试'
+    // 处理错误信息
+    let message = error.message || '操作失败，请重试'
+
+    // 翻译常见错误
+    if (message.includes('Invalid login credentials')) {
+      message = '邮箱或密码错误'
+    } else if (message.includes('User already registered')) {
+      message = '该邮箱已被注册'
+    } else if (message.includes('Email not confirmed')) {
+      message = '请先验证邮箱'
+    }
+
+    errorMessage.value = message
   } finally {
-    loading.value = false
+    loading.value = false // 无论是否成功必须移除加载动画
   }
 }
 </script>

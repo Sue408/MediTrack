@@ -9,7 +9,7 @@
       <!-- 头像区域 -->
       <div class="avatar-section">
         <div class="avatar-container">
-          <img v-if="user?.avatar" :src="user.avatar" alt="头像" class="avatar-large" />
+          <img v-if="user?.avatar_url" :src="user.avatar_url" alt="头像" class="avatar-large" />
           <div v-else class="avatar-placeholder-large">
             {{ user?.username?.charAt(0).toUpperCase() }}
           </div>
@@ -76,7 +76,7 @@ const userStore = useUserStore()
 const user = computed(() => userStore.user)
 const fileInput = ref(null)
 
-// 格式化日期
+// 格式化日期 (2026-1-12 -> 2026年1月12日)
 const formatDate = (dateString) => {
   if (!dateString) return '未知'
   const date = new Date(dateString)
@@ -87,12 +87,14 @@ const formatDate = (dateString) => {
   })
 }
 
-// 上传头像
+// 上传头像方法
 const handleUploadAvatar = () => {
-  fileInput.value?.click()
+  fileInput.value?.click() // 点击按钮即直接触发fileInput的文件上传操作
 }
 
+// 修改头像方法 (绑定文件上传input的change事件)
 const handleFileChange = async (event) => {
+  // 检查文件是否存在
   const file = event.target.files?.[0]
   if (!file) return
 
@@ -109,7 +111,7 @@ const handleFileChange = async (event) => {
   }
 
   try {
-    // 转换为Base64
+    // 转换为Base64并上传
     const reader = new FileReader()
     reader.onload = async (e) => {
       const base64 = e.target.result
@@ -125,11 +127,11 @@ const handleFileChange = async (event) => {
         console.error('头像上传失败：', error)
         toast.error(error.response?.data?.detail || '头像上传失败，请重试')
       } finally {
-        // 清空文件选择，允许重复选择同一文件
+        // 最后清空文件选择，允许重复选择同一文件
         event.target.value = ''
       }
     }
-    reader.readAsDataURL(file)
+    reader.readAsDataURL(file) // 解析成DataURL再调用回调
   } catch (error) {
     console.error('文件读取失败：', error)
     toast.error('文件读取失败，请重试')

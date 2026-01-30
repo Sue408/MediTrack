@@ -37,7 +37,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-
+// 定义外部插槽
 const props = defineProps({
   message: {
     type: String,
@@ -46,27 +46,29 @@ const props = defineProps({
   type: {
     type: String,
     default: 'info',
-    validator: (value) => ['success', 'error', 'warning', 'info'].includes(value)
+    validator: (value) => ['success', 'error', 'warning', 'info'].includes(value) // 类型验证
   },
   duration: {
     type: Number,
     default: 3000
   },
 })
-
+// 定义关闭事件
 const emit = defineEmits(['close'])
-
+// 控制组件显示
 const visible = ref(false)
+// 预定义定时器变量
 let timer = null
 
 onMounted(() => {
-  // 挂载后立即显示
+  // 挂载后立即显示 (0.3s加载动画)
   visible.value = true
 
   // 设置自动关闭定时器
   timer = setTimeout(() => {
+    // 首先隐藏内容
     visible.value = false
-    // 等待动画完成后触发关闭事件
+    // 等待消失动画(0.3s)完成后触发关闭事件 (卸载对象)
     setTimeout(() => {
       emit('close')
     }, 350)
@@ -74,7 +76,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  // 清除定时器
+  // 在卸载后清除定时器对象
   if (timer) {
     clearTimeout(timer)
   }

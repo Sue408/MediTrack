@@ -7,7 +7,7 @@ import request from '@/utils/request'
  */
 export const generateReminders = (days = 7) => {
   return request({
-    url: '/reminder/generate',
+    url: '/reminders/generate',
     method: 'post',
     data: { days }
   })
@@ -20,7 +20,7 @@ export const generateReminders = (days = 7) => {
  */
 export const getRemindersByDate = (date) => {
   return request({
-    url: '/reminder/',
+    url: '/reminders',
     method: 'get',
     params: date ? { target_date: date } : {}
   })
@@ -34,7 +34,7 @@ export const getRemindersByDate = (date) => {
  */
 export const getRemindersByRange = (startDate, endDate) => {
   return request({
-    url: '/reminder/range',
+    url: '/reminders/range',
     method: 'get',
     params: {
       start_date: startDate,
@@ -50,7 +50,7 @@ export const getRemindersByRange = (startDate, endDate) => {
  */
 export const completeReminder = (recordId) => {
   return request({
-    url: `/reminder/${recordId}/complete`,
+    url: `/reminders/${recordId}/complete`,
     method: 'put'
   })
 }
@@ -62,7 +62,7 @@ export const completeReminder = (recordId) => {
  */
 export const uncompleteReminder = (recordId) => {
   return request({
-    url: `/reminder/${recordId}/uncomplete`,
+    url: `/reminders/${recordId}/uncomplete`,
     method: 'put'
   })
 }

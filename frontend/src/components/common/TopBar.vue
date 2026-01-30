@@ -14,7 +14,7 @@
     </div>
     <div class="right-section">
       <div class="user-info">
-        <img v-if="user?.avatar" :src="user.avatar" alt="头像" class="avatar" />
+        <img v-if="user?.avatar_url" :src="user.avatar_url" alt="头像" class="avatar" />
         <div v-else class="avatar-placeholder">{{ user?.username?.charAt(0).toUpperCase() }}</div>
         <span class="username">{{ user?.username }}</span>
       </div>
@@ -27,17 +27,19 @@
 import { computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import Logo from '@/assets/icons/Logo.vue'
+import { signOut } from '@/utils/supabase'
+import Logo from '@/assets/Logo.vue'
 import confirm from '@/utils/confirm'
-
+// 获取路由管理和全局用户状态
 const router = useRouter()
 const userStore = useUserStore()
-
+// 构造计算类型的响应变量
 const user = computed(() => userStore.user)
 
-// 从父组件注入的侧边栏切换方法
+// 从父组件注入的侧边栏切换方法，用于显示侧边栏
 const toggleSidebar = inject('toggleSidebar', () => {})
 
+// 登出方法
 const handleLogout = async () => {
   try {
     await confirm.warning(
@@ -45,13 +47,20 @@ const handleLogout = async () => {
       '退出登录'
     )
 
+    // 清除 Supabase session
+    await signOut()
+
+    // 清除本地状态
     userStore.logout()
+
+    // 跳转到登录页
     router.push('/auth')
   } catch (error) {
     // 用户取消操作
     if (error.message === '用户取消') {
       return
     }
+    console.error('登出失败:', error)
   }
 }
 </script>

@@ -27,9 +27,8 @@ class UserLogin(BaseModel):
 
 class UserUpdate(BaseModel):
     """用户信息更新请求模式"""
-    email: Optional[EmailStr] = Field(None, description="邮箱地址")
+    username: Optional[str] = Field(None, min_length=3, max_length=50, description="用户名")
     full_name: Optional[str] = Field(None, max_length=100, description="真实姓名")
-    password: Optional[str] = Field(None, min_length=6, max_length=50, description="新密码")
 
 
 class UserAvatarUpdate(BaseModel):
@@ -39,18 +38,20 @@ class UserAvatarUpdate(BaseModel):
 
 class UserResponse(BaseModel):
     """用户信息响应模式"""
-    id: int = Field(..., description="用户ID")
+    id: str = Field(..., description="用户ID（UUID）")
     username: str = Field(..., description="用户名")
-    email: str = Field(..., description="邮箱地址")
+    email: Optional[str] = Field(None, description="邮箱地址")
     full_name: Optional[str] = Field(None, description="真实姓名")
-    avatar: Optional[str] = Field(None, description="头像Base64编码")
-    is_active: int = Field(..., description="账户状态")
+    avatar_url: Optional[str] = Field(None, description="头像URL")
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="更新时间")
 
     class Config:
         from_attributes = True  # 允许从ORM模型创建
-
+        # 添加 JSON 序列化配置，自动将 UUID 转换为字符串
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
 
 class TokenResponse(BaseModel):
     """Token响应模式"""

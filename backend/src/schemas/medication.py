@@ -5,8 +5,9 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Literal
 from datetime import date, datetime
+from uuid import UUID
 
-
+# noinspection PyUnusedLocal,PyMethodParameters
 class MedicationBase(BaseModel):
     """药物基础模式"""
     name: str = Field(..., min_length=1, max_length=100, description="药物名称")
@@ -20,6 +21,20 @@ class MedicationBase(BaseModel):
     notes: Optional[str] = Field(None, description="备注")
     photos: Optional[str] = Field(None, description="药品照片JSON数组")
     barcode: Optional[str] = Field(None, max_length=100, description="药品条形码")
+
+    # 外部药物数据库相关字段
+    drug_code: Optional[str] = Field(None, max_length=100, description="药品编码（国药准字号）")
+    manufacturer: Optional[str] = Field(None, max_length=200, description="生产厂家")
+    specification: Optional[str] = Field(None, max_length=100, description="包装规格")
+    dosage_form: Optional[str] = Field(None, max_length=50, description="产品剂型")
+    is_prescription: Optional[bool] = Field(None, description="是否为处方药")
+    drug_image_url: Optional[str] = Field(None, max_length=500, description="药品官方图片URL")
+    instruction_manual: Optional[str] = Field(None, description="说明书内容JSON格式")
+    approval_number: Optional[str] = Field(None, max_length=100, description="批准文号")
+    generic_name: Optional[str] = Field(None, max_length=200, description="通用名")
+    trade_name: Optional[str] = Field(None, max_length=200, description="商品名")
+    data_source: Optional[str] = Field("manual", max_length=20, description="数据来源：manual-手动录入，api-外部API")
+    external_drug_id: Optional[str] = Field(None, max_length=100, description="外部数据库药物ID")
 
     @field_validator('daily_times')
     def validate_daily_times(cls, v, info):
@@ -63,11 +78,25 @@ class MedicationUpdate(BaseModel):
     barcode: Optional[str] = Field(None, max_length=100, description="条形码")
     is_active: Optional[int] = Field(None, description="是否激活：1-激活，0-停用")
 
+    # 外部药物数据库相关字段
+    drug_code: Optional[str] = Field(None, max_length=100, description="药品编码")
+    manufacturer: Optional[str] = Field(None, max_length=200, description="生产厂家")
+    specification: Optional[str] = Field(None, max_length=100, description="包装规格")
+    dosage_form: Optional[str] = Field(None, max_length=50, description="产品剂型")
+    is_prescription: Optional[int] = Field(None, description="是否为处方药")
+    drug_image_url: Optional[str] = Field(None, max_length=500, description="药品官方图片URL")
+    instruction_manual: Optional[str] = Field(None, description="说明书内容")
+    approval_number: Optional[str] = Field(None, max_length=100, description="批准文号")
+    generic_name: Optional[str] = Field(None, max_length=200, description="通用名")
+    trade_name: Optional[str] = Field(None, max_length=200, description="商品名")
+    data_source: Optional[str] = Field(None, max_length=20, description="数据来源")
+    external_drug_id: Optional[str] = Field(None, max_length=100, description="外部数据库药物ID")
+
 
 class MedicationResponse(BaseModel):
     """药物信息响应模式"""
     id: int = Field(..., description="药物ID")
-    user_id: int = Field(..., description="用户ID")
+    user_id: UUID = Field(..., description="用户UUID")
     name: str = Field(..., description="药物名称")
     dosage: Optional[str] = Field(None, description="剂量")
     frequency_type: str = Field(..., description="频率类型")
@@ -79,9 +108,23 @@ class MedicationResponse(BaseModel):
     notes: Optional[str] = Field(None, description="备注")
     photos: Optional[str] = Field(None, description="药品照片")
     barcode: Optional[str] = Field(None, description="条形码")
-    is_active: int = Field(..., description="是否激活")
+    is_active: bool = Field(..., description="是否激活")
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="更新时间")
+
+    # 外部药物数据库相关字段
+    drug_code: Optional[str] = Field(None, description="药品编码")
+    manufacturer: Optional[str] = Field(None, description="生产厂家")
+    specification: Optional[str] = Field(None, description="包装规格")
+    dosage_form: Optional[str] = Field(None, description="产品剂型")
+    is_prescription: Optional[bool] = Field(None, description="是否为处方药")
+    drug_image_url: Optional[str] = Field(None, description="药品官方图片URL")
+    instruction_manual: Optional[str] = Field(None, description="说明书内容")
+    approval_number: Optional[str] = Field(None, description="批准文号")
+    generic_name: Optional[str] = Field(None, description="通用名")
+    trade_name: Optional[str] = Field(None, description="商品名")
+    data_source: Optional[str] = Field(None, description="数据来源")
+    external_drug_id: Optional[str] = Field(None, description="外部数据库药物ID")
 
     class Config:
         from_attributes = True  # 允许从ORM模型创建

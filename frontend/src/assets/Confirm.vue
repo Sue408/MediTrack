@@ -91,13 +91,17 @@ onMounted(() => {
   visible.value = true
 })
 
+// 确认方法
 const handleConfirm = () => {
   loading.value = true
   emit('confirm')
 }
 
+// 取消方法
 const handleCancel = () => {
+  // 如果已经正在加载则拒绝取消操作
   if (loading.value) return
+  // 触发取消动画并设置定时器在动画完成后发生取消、关闭事件
   visible.value = false
   setTimeout(() => {
     emit('cancel')
@@ -105,7 +109,7 @@ const handleCancel = () => {
   }, 300)
 }
 
-// 暴露方法供外部调用
+// 暴露方法供外部调用 （直接关闭方法）
 const close = () => {
   visible.value = false
   setTimeout(() => {

@@ -7,36 +7,37 @@ from sqlalchemy.orm import Session
 import base64
 import re
 from ..db.database import get_db
-from ..schemas.user import (
-    UserCreate,
-    UserLogin,
-    UserUpdate,
-    UserResponse,
-    TokenResponse,
-    UserAvatarUpdate
-)
-from ..serves import user_service
-from fastapi.security import OAuth2PasswordBearer
+from ..db.models.user import UserProfile
+from ..schemas.user import UserResponse, UserUpdate, UserAvatarUpdate
+from ..serves import supabase_service
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # 创建路由器
-router = APIRouter(prefix="/user", tags=["用户管理"])
+router = APIRouter(prefix="/users", tags=["用户管理"])
 
-# OAuth2密码bearer认证 (tokenUrl指定来源)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/login")
-
+# HTTP Bearer认证
+security = HTTPBearer()
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ) -> UserResponse:
     """
-    获取当前登录用户
-    :param token: JWT令牌
+    获取当前登录用户信息
+
+    从HTTP请求头中提取JWT token，验证后查询用户profile信息。
+    邮箱信息从JWT token的payload中提取（存储在Supabase Auth中）。
+
+    :param credentials: HTTP Bearer认证凭证
     :param db: 数据库会话
-    :return: 当前用户信息
+    :return: 用户信息响应对象
+    :raises HTTPException: 401 - token无效或用户不存在
+    :raises HTTPException: 500 - 数据处理失败
     """
-    # 解码token
-    payload = user_service.decode_access_token(token)
+    token = credentials.credentials
+
+    # 验证JWT token并获取payload
+    payload = supabase_service.verify_supabase_token(token)
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -44,112 +45,44 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 获取用户ID（JWT的sub必须是字符串）
-    user_id_str: str = payload.get("sub")
-    if user_id_str is None:
+    # 从payload中提取用户UUID
+    user_id = payload.get("sub")
+    if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="无效的认证凭证",
+            detail="Token中缺少用户UUID",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 将字符串转换为整数
+    # 查询用户profile（扩展信息）
+    user_profile = db.query(UserProfile).filter(UserProfile.id == user_id).first()
+    if user_profile is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="用户profile不存在"
+        )
+
     try:
-        user_id = int(user_id_str)
-    except (ValueError, TypeError):
+        # 从JWT token中提取邮箱（存储在Supabase Auth中）
+        email = payload.get("email")
+
+        # 构建完整的用户信息响应
+        user_data = {
+            "id": user_id,
+            "username": user_profile.username,
+            "email": email,
+            "full_name": user_profile.full_name,
+            "avatar_url": user_profile.avatar_url,
+            "created_at": user_profile.created_at,
+            "updated_at": user_profile.updated_at
+        }
+
+        return UserResponse(**user_data)
+    except:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="无效的用户ID格式",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="用户数据处理失败"
         )
-
-    # 查询用户
-    user = user_service.get_user_by_id(db, user_id=user_id)
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="用户不存在",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    return UserResponse.model_validate(user)
-
-
-@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserCreate, db: Session = Depends(get_db)):
-    """
-    用户注册
-    :param user_data: 用户注册数据
-    :param db: 数据库会话
-    :return: 用户信息和访问令牌
-    """
-    # 检查用户名是否已存在
-    existing_user = user_service.get_user_by_username(db, user_data.username)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="用户名已存在"
-        )
-
-    # 检查邮箱是否已存在
-    existing_email = user_service.get_user_by_email(db, user_data.email)
-    if existing_email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="邮箱已被注册"
-        )
-
-    # 创建用户
-    print(user_data)
-    user = user_service.create_user(db, user_data)
-
-    # 生成访问令牌
-    access_token = user_service.create_access_token(
-        data={"sub": str(user.id)}
-    )
-
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer",
-        user=UserResponse.model_validate(user)
-    )
-
-
-@router.post("/login", response_model=TokenResponse)
-async def login(login_data: UserLogin, db: Session = Depends(get_db)):
-    """
-    用户登录
-    :param login_data: 登录数据
-    :param db: 数据库会话
-    :return: 用户信息和访问令牌
-    """
-    # 验证用户
-    user = user_service.authenticate_user(db, login_data.username, login_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=402,
-            detail="用户名或密码错误",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    # 检查账户是否激活
-    if user.is_active != 1:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="账户已被禁用"
-        )
-
-    # 生成访问令牌
-    access_token = user_service.create_access_token(
-        data={"sub": str(user.id)}
-    )
-
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer",
-        user=UserResponse.model_validate(user)
-    )
-
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user: UserResponse = Depends(get_current_user)):
@@ -161,6 +94,7 @@ async def get_current_user_info(current_user: UserResponse = Depends(get_current
     return current_user
 
 
+# noinspection DuplicatedCode
 @router.put("/me", response_model=UserResponse)
 async def update_current_user(
     user_data: UserUpdate,
@@ -174,26 +108,51 @@ async def update_current_user(
     :param db: 数据库会话
     :return: 更新后的用户信息
     """
-    # 如果更新邮箱，检查邮箱是否已被其他用户使用
-    if user_data.email:
-        existing_email = user_service.get_user_by_email(db, user_data.email)
-        if existing_email and existing_email.id != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="邮箱已被其他用户使用"
-            )
-
-    # 更新用户信息
-    updated_user = user_service.update_user(db, current_user.id, user_data)
-    if not updated_user:
+    # 查询用户profile
+    user_profile = db.query(UserProfile).filter(UserProfile.id == current_user.id).first()
+    if not user_profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="用户不存在"
         )
 
-    return UserResponse.model_validate(updated_user)
+    # 更新字段
+    if user_data.username is not None:
+        # 检查用户名是否已被其他用户使用
+        existing = db.query(UserProfile).filter(
+            UserProfile.username == user_data.username,
+            UserProfile.id != current_user.id
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="用户名已被使用"
+            )
+        user_profile.username = user_data.username
+
+    if user_data.full_name is not None:
+        user_profile.full_name = user_data.full_name
+
+    # 保存到数据库
+    db.add(user_data)
+    db.commit()
+    db.refresh(user_profile)
+
+    # 构建包含邮箱的完整用户信息
+    user_data = {
+        "id": str(user_profile.id),
+        "username": user_profile.username,
+        "email": current_user.email,  # 从当前用户获取邮箱
+        "full_name": user_profile.full_name,
+        "avatar_url": user_profile.avatar_url,
+        "created_at": user_profile.created_at,
+        "updated_at": user_profile.updated_at
+    }
+
+    return UserResponse(**user_data)
 
 
+# noinspection DuplicatedCode
 @router.post("/avatar", response_model=UserResponse)
 async def upload_avatar(
     avatar_data: UserAvatarUpdate,
@@ -201,34 +160,37 @@ async def upload_avatar(
     db: Session = Depends(get_db)
 ):
     """
-    上传用户头像（Base64编码）
+    上传用户头像到Supabase Storage
     :param avatar_data: 头像Base64数据
     :param current_user: 当前登录用户
     :param db: 数据库会话
     :return: 更新后的用户信息
     """
-    # 验证Base64格式（应包含data:image/...;base64,前缀）
+    # 验证Base64格式
     base64_pattern = r'^data:image/(jpeg|jpg|png|gif|webp);base64,[A-Za-z0-9+/=]+$'
     if not re.match(base64_pattern, avatar_data.avatar):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="无效的Base64图片格式，应包含data:image/...;base64,前缀"
+            detail="无效的Base64图片格式"
         )
 
-    # 提取Base64数据部分（去掉前缀）
+    # 提取Base64数据和文件类型
     try:
-        # 分离前缀和数据
         header, encoded = avatar_data.avatar.split(',', 1)
+        # 提取文件扩展名
+        file_ext = header.split('/')[1].split(';')[0]
+        if file_ext == 'jpeg':
+            file_ext = 'jpg'
 
-        # 验证Base64数据并检查大小
+        # 解码Base64
         decoded = base64.b64decode(encoded)
 
-        # 限制图片大小为5MB
-        max_size = 5 * 1024 * 1024  # 5MB
+        # 限制图片大小为2MB
+        max_size = 2 * 1024 * 1024
         if len(decoded) > max_size:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="图片大小超过5MB限制"
+                detail="图片大小超过2MB限制"
             )
     except Exception as e:
         raise HTTPException(
@@ -236,12 +198,36 @@ async def upload_avatar(
             detail=f"Base64解码失败: {str(e)}"
         )
 
-    # 更新用户头像
-    updated_user = user_service.update_user_avatar(db, current_user.id, avatar_data.avatar)
-    if not updated_user:
+    # 上传到Supabase Storage
+    avatar_url = supabase_service.upload_avatar(current_user.id, decoded, file_ext)
+    if not avatar_url:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="头像上传失败"
+        )
+
+    # 更新用户profile
+    user_profile = db.query(UserProfile).filter(UserProfile.id == current_user.id).first()
+    if not user_profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="用户不存在"
         )
 
-    return UserResponse.model_validate(updated_user)
+    user_profile.avatar_url = avatar_url
+    db.add(user_profile)
+    db.commit()
+    db.refresh(user_profile)
+
+    # 构建包含邮箱的完整用户信息
+    user_data = {
+        "id": str(user_profile.id),
+        "username": user_profile.username,
+        "email": current_user.email,  # 从当前用户获取邮箱
+        "full_name": user_profile.full_name,
+        "avatar_url": user_profile.avatar_url,
+        "created_at": user_profile.created_at,
+        "updated_at": user_profile.updated_at
+    }
+
+    return UserResponse(**user_data)

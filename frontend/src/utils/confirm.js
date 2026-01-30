@@ -54,7 +54,7 @@ export function showConfirm({
       }
     })
 
-    // 挂载
+    // 挂载并设置正在加载为false
     confirmInstance = confirmApp.mount(confirmContainer)
     isClosing = false
   })
@@ -70,9 +70,7 @@ export function hideConfirm() {
   }
 
   isClosing = true
-
-  setTimeout(() => {
-    try {
+  try {
       if (confirmApp) {
         confirmApp.unmount()
       }
@@ -87,8 +85,7 @@ export function hideConfirm() {
       confirmContainer = null
       isClosing = false
     }
-  }, 300) // 等待动画完成
-}
+  }
 
 /**
  * 快捷方法

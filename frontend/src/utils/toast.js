@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import Toast from '@/assets/Toast.vue'
-
+// 预定义变量用于储存组件和App对象
 let toastInstance = null
 let toastApp = null
 
@@ -12,7 +12,7 @@ let toastApp = null
  * @param {number} options.duration - 显示时长（毫秒）
  */
 export function showToast({ message, type = 'info', duration = 3000 }) {
-  // 如果已有实例，先销毁
+  // 如果已有组件实例，先销毁
   if (toastInstance) {
     hideToast()
   }
@@ -38,19 +38,17 @@ export function showToast({ message, type = 'info', duration = 3000 }) {
 }
 
 /**
- * 隐藏Toast
+ * 卸载Toast挂载的DOM
  */
 export function hideToast() {
   if (toastApp && toastInstance) {
-    setTimeout(() => {
-      toastApp?.unmount()
-      const container = document.querySelector('body > div:last-child')
-      if (container) {
-        document.body.removeChild(container)
-      }
-      toastApp = null
-      toastInstance = null
-    }, 300) // 等待动画完成
+    toastApp.unmount()
+    const container = document.querySelector('body > div:last-child')
+    if (container) {
+      document.body.removeChild(container)
+    }
+    toastApp = null
+    toastInstance = null
   }
 }
 

@@ -4,9 +4,8 @@
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional, Any
 import json
-
 from ..db.database import get_db
 from ..schemas.medication import (
     MedicationCreate,
@@ -18,29 +17,28 @@ from ..serves import medication_service
 from .user import get_current_user
 
 # 创建路由器
-router = APIRouter(prefix="/medication", tags=["药物管理"])
+router = APIRouter(prefix="/medications", tags=["药物管理"])
+
+
+def _safe_json_parse(json_str: Optional[str], default: Any = None) -> Any:
+    """
+    安全解析JSON字符串
+    :param json_str: JSON字符串
+    :param default: 解析失败时的默认值
+    :return: 解析后的对象或默认值
+    """
+    if not json_str:
+        return default
+    try:
+        return json.loads(json_str)
+    except (json.JSONDecodeError, TypeError):
+        return default
 
 
 def _build_medication_response(medication) -> MedicationResponse:
     """
     构建药物响应对象，解析JSON字段
     """
-    # 解析daily_times
-    daily_times = None
-    if medication.daily_times:
-        try:
-            daily_times = json.loads(medication.daily_times)
-        except: # noqa
-            daily_times = None
-
-    # 解析weekly_days
-    weekly_days = None
-    if medication.weekly_days:
-        try:
-            weekly_days = json.loads(medication.weekly_days)
-        except: # noqa
-            weekly_days = None
-
     return MedicationResponse(
         id=medication.id,
         user_id=medication.user_id,
@@ -48,8 +46,8 @@ def _build_medication_response(medication) -> MedicationResponse:
         dosage=medication.dosage,
         frequency_type=medication.frequency_type,
         times_per_day=medication.times_per_day,
-        daily_times=daily_times,
-        weekly_days=weekly_days,
+        daily_times=_safe_json_parse(medication.daily_times, []),
+        weekly_days=_safe_json_parse(medication.weekly_days, []),
         start_date=medication.start_date,
         end_date=medication.end_date,
         notes=medication.notes,
@@ -57,7 +55,20 @@ def _build_medication_response(medication) -> MedicationResponse:
         barcode=medication.barcode,
         is_active=medication.is_active,
         created_at=medication.created_at,
-        updated_at=medication.updated_at
+        updated_at=medication.updated_at,
+        # 外部药物数据库相关字段
+        drug_code=medication.drug_code,
+        manufacturer=medication.manufacturer,
+        specification=medication.specification,
+        dosage_form=medication.dosage_form,
+        is_prescription=medication.is_prescription,
+        drug_image_url=medication.drug_image_url,
+        instruction_manual=medication.instruction_manual,
+        approval_number=medication.approval_number,
+        generic_name=medication.generic_name,
+        trade_name=medication.trade_name,
+        data_source=medication.data_source,
+        external_drug_id=medication.external_drug_id
     )
 
 
@@ -110,7 +121,12 @@ async def get_medication(
     if not medication:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="药物记录不存在"
+            detail={
+                "message": "药物记录不存在或无权访问",
+                "medication_id": medication_id,
+                "error_code": "MEDICATION_NOT_FOUND",
+                "suggestion": "请检查药物ID是否正确，或确认该药物属于您的账户"
+            }
         )
     return _build_medication_response(medication)
 
@@ -136,7 +152,12 @@ async def update_medication(
     if not medication:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="药物记录不存在"
+            detail={
+                "message": "无法更新药物记录",
+                "medication_id": medication_id,
+                "error_code": "MEDICATION_UPDATE_FAILED",
+                "suggestion": "请确认药物ID正确且该药物属于您的账户"
+            }
         )
     return _build_medication_response(medication)
 
@@ -158,5 +179,10 @@ async def delete_medication(
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="药物记录不存在"
+            detail={
+                "message": "无法删除药物记录",
+                "medication_id": medication_id,
+                "error_code": "MEDICATION_DELETE_FAILED",
+                "suggestion": "请确认药物ID正确且该药物属于您的账户"
+            }
         )

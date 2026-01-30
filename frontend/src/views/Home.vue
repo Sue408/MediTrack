@@ -19,12 +19,12 @@
 
 <script setup>
 import { ref, provide } from 'vue'
-import TopBar from '@/components/TopBar.vue'
-import Sidebar from '@/components/Sidebar.vue'
+import TopBar from '@/components/common/TopBar.vue'
+import Sidebar from '@/components/common/Sidebar.vue'
 
 const sidebarRef = ref(null)
 
-// 提供侧边栏切换方法给子组件
+// 提供侧边栏切换方法给子组件 (toggleSidebar-用于显示、隐藏侧边栏)
 const toggleSidebar = () => {
   sidebarRef.value?.toggleSidebar()
 }

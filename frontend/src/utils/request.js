@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getAccessToken, refreshSession } from './supabase'
 
 // 创建axios实例
 const request = axios.create({
@@ -11,16 +12,15 @@ const request = axios.create({
 
 // 请求拦截器
 request.interceptors.request.use(
-  (config) => {
-    // 从localStorage获取token
-    const token = localStorage.getItem('token')
+  async (config) => {
+    // 从Supabase获取token
+    const token = await getAccessToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },
   (error) => {
-    console.error('请求错误：', error)
     return Promise.reject(error)
   }
 )
@@ -28,19 +28,24 @@ request.interceptors.request.use(
 // 响应拦截器
 request.interceptors.response.use(
   (response) => {
-    console.log('响应拦截器 - 成功:', response.status, response.config.url)
     return response.data
   },
-  (error) => {
+  async (error) => {
     // 处理错误响应
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          console.error('401错误 - 未授权，即将跳转到登录页')
-          // 未授权，清除token并跳转到登录页
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
-          window.location.href = '/auth'
+          // 尝试刷新token
+          const { session, error: refreshError } = await refreshSession()
+          if (session) {
+            // 刷新成功，重试请求
+            const token = session.access_token
+            error.config.headers.Authorization = `Bearer ${token}`
+            return axios.request(error.config)
+          } else {
+            // 刷新失败，跳转到登录页
+            window.location.href = '/auth'
+          }
           break
         case 403:
           console.error('没有权限访问')
@@ -51,13 +56,9 @@ request.interceptors.response.use(
         case 500:
           console.error('服务器错误')
           break
-        default:
-          console.error('请求失败：', error.response.data)
       }
     } else if (error.request) {
       console.error('网络错误，请检查网络连接')
-    } else {
-      console.error('请求配置错误：', error.message)
     }
     return Promise.reject(error)
   }

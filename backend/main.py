@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from src.core import config
 from src.db import init_db
-from src.api import user_router, medication_router, reminder_router
+from src.api import user_router, medication_router, reminder_router, third_party_router
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -16,6 +16,7 @@ async def lifespan(_app: FastAPI):
     yield
     print("应用关闭...")
 
+# noinspection SpellCheckingInspection
 def main():
     """程序入口函数"""
     # 初始化APP
@@ -29,7 +30,11 @@ def main():
     # 配置CORS中间件
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=[
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"]
@@ -43,6 +48,9 @@ def main():
 
     # 注册提醒路由
     app.include_router(reminder_router)
+
+    # 注册第三方查询路由
+    app.include_router(third_party_router)
 
     # 启动uvicorn服务
     uvicorn.run(app, host=config.HOST, port=config.PORT)

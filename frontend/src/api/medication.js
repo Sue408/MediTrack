@@ -18,7 +18,7 @@ import request from '@/utils/request'
  */
 export const createMedication = (data) => {
   return request({
-    url: '/medication',
+    url: '/medications',
     method: 'post',
     data
   })
@@ -30,7 +30,7 @@ export const createMedication = (data) => {
  */
 export const getMedications = () => {
   return request({
-    url: '/medication',
+    url: '/medications',
     method: 'get'
   })
 }
@@ -42,7 +42,7 @@ export const getMedications = () => {
  */
 export const getMedicationById = (id) => {
   return request({
-    url: `/medication/${id}`,
+    url: `/medications/${id}`,
     method: 'get'
   })
 }
@@ -55,7 +55,7 @@ export const getMedicationById = (id) => {
  */
 export const updateMedication = (id, data) => {
   return request({
-    url: `/medication/${id}`,
+    url: `/medications/${id}`,
     method: 'put',
     data
   })
@@ -68,7 +68,7 @@ export const updateMedication = (id, data) => {
  */
 export const deleteMedication = (id) => {
   return request({
-    url: `/medication/${id}`,
+    url: `/medications/${id}`,
     method: 'delete'
   })
 }
