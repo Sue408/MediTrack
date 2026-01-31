@@ -18,6 +18,10 @@ class Config(BaseSettings):
     # 数据库配置
     DATABASE_URL: str = None
 
+    # 极速API配置（药品数据库）
+    JISU_API_KEY: str = None
+    JISU_API_BASE_URL: str = "https://api.jisuapi.com"
+
     model_config = SettingsConfigDict(env_file='.env', extra='allow')
 
 # 定义唯一的配置实例

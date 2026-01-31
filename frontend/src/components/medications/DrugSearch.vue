@@ -152,16 +152,24 @@ const handleSearchInput = () => {
     return
   }
 
-  // 300ms 防抖
+  // 如果输入字符少于2个，不触发搜索
+  if (searchQuery.value.trim().length < 2) {
+    return
+  }
+
+  // 600ms 防抖（提高防抖时间，减少不必要的请求）
   debounceTimer = setTimeout(() => {
     handleSearch()
-  }, 300)
+  }, 600)
 }
 
 // 执行搜索
 const handleSearch = async () => {
   const query = searchQuery.value.trim()
   if (!query) return
+
+  // 如果输入字符少于2个，不触发搜索
+  if (query.length < 2) return
 
   loading.value = true
   searched.value = false
@@ -170,11 +178,35 @@ const handleSearch = async () => {
     const response = await searchDrugs(query, searchType.value, 10)
     searchResults.value = response.data || response
     searched.value = true
+
+    // 如果没有找到结果，静默处理，不显示错误提示
+    if (searchResults.value.length === 0) {
+      console.log('未找到匹配的药品')
+    }
   } catch (error) {
     console.error('搜索药物失败:', error)
-    toast.error('搜索失败，请稍后重试')
     searchResults.value = []
     searched.value = true
+
+    // 只有在真正的错误（非404或空结果）时才显示Toast警告
+    if (error.response) {
+      const status = error.response.status
+      const message = error.response.data?.detail || error.message
+
+      // 如果是500错误且提示未找到，不显示警告
+      if (status === 500 && (message.includes('未找到') || message.includes('not found') || message.includes('API错误'))) {
+        console.log('未找到匹配的药品')
+      } else if (status === 404) {
+        // 404错误也不显示警告，这是正常的"未找到"情况
+        console.log('未找到匹配的药品')
+      } else {
+        // 其他错误才显示Toast
+        toast.error(message || '搜索失败，请稍后重试')
+      }
+    } else {
+      // 网络错误等
+      toast.error('网络错误，请检查网络连接')
+    }
   } finally {
     loading.value = false
   }

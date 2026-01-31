@@ -38,12 +38,6 @@
               <span class="value">{{ user?.email }}</span>
             </div>
             <div class="info-item">
-              <span class="label">账户状态</span>
-              <span class="value" :class="user?.is_active ? 'status-active' : 'status-inactive'">
-                {{ user?.is_active ? '正常' : '未激活' }}
-              </span>
-            </div>
-            <div class="info-item">
               <span class="label">注册时间</span>
               <span class="value">{{ formatDate(user?.created_at) }}</span>
             </div>

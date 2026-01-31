@@ -26,7 +26,7 @@ async def search_drugs(
     :return: 药物搜索结果列表
     """
     try:
-        results = search_drugs_from_third_party(query, search_type, limit)
+        results = await search_drugs_from_third_party(query, search_type, limit)
         return results
     except Exception as e:
         raise HTTPException(
@@ -44,7 +44,7 @@ async def get_drug_detail(
     :param external_drug_id: 外部数据库药物ID
     :return: 药物详细信息
     """
-    drug = get_drug_detail_from_third_party(external_drug_id)
+    drug = await get_drug_detail_from_third_party(external_drug_id)
     if not drug:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -62,10 +62,10 @@ async def get_instruction_manual(
     :param external_drug_id: 外部数据库药物ID
     :return: 说明书内容（仅非处方药可访问）
     """
-    instruction = get_instruction_manual_from_third_party(external_drug_id)
+    instruction = await get_instruction_manual_from_third_party(external_drug_id)
     if instruction is None:
         # 检查药物是否存在
-        drug = get_drug_detail_from_third_party(external_drug_id)
+        drug = await get_drug_detail_from_third_party(external_drug_id)
         if not drug:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
